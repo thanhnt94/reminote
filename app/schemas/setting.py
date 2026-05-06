@@ -1,0 +1,16 @@
+"""SystemSetting Pydantic schemas."""
+
+from pydantic import BaseModel
+
+
+class SettingResponse(BaseModel):
+    key: str
+    value: str
+    description: str | None = None
+    category: str | None = None
+
+    model_config = {"from_attributes": True}
+
+
+class SettingUpdate(BaseModel):
+    value: str

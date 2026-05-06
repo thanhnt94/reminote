@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-primary: #10b981;
+  --color-brand-secondary: #059669;
+}
+
+:root {
+  background-color: #020617; /* Slate 950 */
+  color: #f1f5f9;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #020617;
+  font-family: 'Inter', -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tinder Card Perspective */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+/* Premium Obsidian Shadows & Borders */
+.shadow-sm {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+.shadow-xl {
+  box-shadow: 0 20px 40px -15px rgba(0,0,0,0.8);
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* Obsidian Glassmorphism */
+.glass {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Typography tracking */
+.tracking-tighter { letter-spacing: -0.05em; }
+.tracking-tight { letter-spacing: -0.025em; }
+.tracking-widest { letter-spacing: 0.2em; }
+
+/* Custom Scrollbar (Obsidian Style) */
+::-webkit-scrollbar {
+  width: 3px;
+  height: 3px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes glow-emerald {
+  0%, 100% { box-shadow: 0 0 5px rgba(16, 185, 129, 0.1); }
+  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+}
+
+.glow-emerald {
+  animation: glow-emerald 3s infinite;
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+::selection {
+  background: #10b981;
+  color: #020617;
+}
+
+/* Obsidian Card Background */
+.bg-obsidian {
+  background-color: #0f172a; /* Slate 900 */
+}

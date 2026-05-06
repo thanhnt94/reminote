@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+.env
+*.db
+app/static/dist/
+frontend/node_modules/
+frontend/dist/
+logs/
+uploads/
+*.egg-info/
+.venv/

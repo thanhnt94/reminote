@@ -1,0 +1,7 @@
+{
+  "name": "RemiNote",
+  "port": 5060,
+  "description": "Aggressive Knowledge Reinforcement System - Spaced Repetition via Push Notifications",
+  "stack": "FastAPI + SQLAlchemy + APScheduler + React/Vite/Tailwind",
+  "version": "0.1.0"
+}
