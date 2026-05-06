@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
 import MemoryBadge from './MemoryBadge'
+import MarkdownRenderer from './MarkdownRenderer'
 
 interface Attachment {
   id: number
@@ -84,9 +85,13 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
             <h3 className="text-white text-[13px] font-black leading-tight tracking-tight line-clamp-2 group-hover:text-emerald-400 transition-colors">
               {reminder.title || 'Knowledge Node'}
             </h3>
-            <p className="text-slate-500 text-[10px] leading-relaxed font-medium line-clamp-3">
-              {reminder.content_text || 'System awaiting data integration.'}
-            </p>
+            <div className="relative max-h-[80px] overflow-hidden">
+               <MarkdownRenderer 
+                 content={reminder.content_text || 'System awaiting data integration.'} 
+                 className="!prose-xs !text-[10px] pointer-events-none"
+               />
+               <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#0f172a] to-transparent" />
+            </div>
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-white/5">

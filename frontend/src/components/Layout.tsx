@@ -14,7 +14,9 @@ import {
   Layers,
   Cpu,
   Archive,
-  Filter
+  Filter,
+  X,
+  Tag as TagIcon
 } from 'lucide-react'
 
 export default function Layout() {
@@ -26,6 +28,8 @@ export default function Layout() {
   const [search, setSearch] = useState('')
   const [selectedTag, setSelectedTag] = useState('')
   const [showArchived, setShowArchived] = useState(false)
+  const [showTagExplorer, setShowTagExplorer] = useState(false)
+  const [tagSearch, setTagSearch] = useState('')
 
   const { data: dueData } = useQuery({
     queryKey: ['reminders-due-count'],
@@ -34,13 +38,19 @@ export default function Layout() {
     refetchInterval: 30000
   })
 
-  const { data: tags } = useQuery({
+  const { data: tagsData } = useQuery({
     queryKey: ['tags'],
     queryFn: async () => (await api.get('/api/reminders/tags')).data,
     enabled: location.pathname === '/dashboard'
   })
 
   useEffect(() => { fetchMe() }, [])
+
+  // Smart Tag Filtering for Explorer
+  const allTags = tagsData || []
+  const filteredTags = useMemo(() => {
+    return allTags.filter((t: any) => t.name.toLowerCase().includes(tagSearch.toLowerCase()))
+  }, [allTags, tagSearch])
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#020617]"><Cpu className="w-8 h-8 text-emerald-500 animate-spin" /></div>
   if (!user) { navigate('/login'); return null }
@@ -51,11 +61,10 @@ export default function Layout() {
   return (
     <div className="h-screen w-full flex flex-col bg-[#020617] font-sans overflow-hidden text-slate-100 selection:bg-emerald-500/30">
       
-      {/* High-Impact Command Center Header */}
+      {/* Command Center Header */}
       <header className="flex-none bg-[#020617]/90 backdrop-blur-2xl border-b border-white/5 z-50">
         <div className="max-w-5xl mx-auto w-full px-4 pt-4 pb-2 space-y-4">
           <div className="flex items-center justify-between gap-4">
-            {/* Logo */}
             <div className="flex items-center gap-2 flex-none">
               <div className="bg-emerald-500/10 p-1.5 rounded-lg border border-emerald-500/20">
                 <Layers className="w-4 h-4 text-emerald-400" />
@@ -63,7 +72,6 @@ export default function Layout() {
               <h1 className="text-xs font-black tracking-tighter text-white hidden md:block">REMINOTE</h1>
             </div>
 
-            {/* Red Box Area: Global Search */}
             <div className="flex-1 max-w-md relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
               <input 
@@ -71,65 +79,126 @@ export default function Layout() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search knowledge node..." 
-                className="w-full bg-white/5 border border-white/5 rounded-xl py-2 pl-10 pr-4 text-[11px] font-bold text-white outline-none focus:border-emerald-500/30 focus:bg-white/10 transition-all"
+                className="w-full bg-white/5 border border-white/5 rounded-xl py-2.5 pl-10 pr-4 text-[11px] font-bold text-white outline-none focus:border-emerald-500/30 focus:bg-white/10 transition-all"
               />
             </div>
 
-            {/* Profile & Vault Toggle */}
             <div className="flex items-center gap-2 flex-none">
                {isDashboard && (
                  <button 
                    onClick={() => setShowArchived(!showArchived)}
-                   className={`p-2 rounded-xl border transition-all ${
+                   className={`p-2.5 rounded-xl border transition-all ${
                      showArchived ? 'bg-emerald-500 text-[#020617] border-emerald-400 shadow-lg' : 'bg-white/5 text-slate-500 border-white/5'
                    }`}
                  >
                    <Archive className="w-4 h-4" />
                  </button>
                )}
-               <div className="w-8 h-8 bg-emerald-500 text-[#020617] rounded-xl flex items-center justify-center text-[10px] font-black border-2 border-emerald-400/20">
+               <div className="w-9 h-9 bg-emerald-500 text-[#020617] rounded-xl flex items-center justify-center text-[11px] font-black border-2 border-emerald-400/20">
                 {user.username.charAt(0).toUpperCase()}
                </div>
             </div>
           </div>
 
-          {/* Tag Ribbon - Integrated into Header for Dashboard */}
-          {isDashboard && tags && (
+          {/* Integrated Tag Ribbon + Filter Button */}
+          {isDashboard && tagsData && (
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex gap-2 overflow-x-auto no-scrollbar pb-2"
+              className="flex items-center gap-2"
             >
-              <button 
-                onClick={() => setSelectedTag('')}
-                className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
-                  selectedTag === '' ? 'bg-white text-[#020617] border-white' : 'bg-white/5 text-slate-500 border-white/5'
-                }`}
-              >
-                All
-              </button>
-              {tags.slice(0, 15).map((t: any) => (
+              <div className="flex gap-2 overflow-x-auto no-scrollbar flex-1 pb-1">
                 <button 
-                  key={t.name}
-                  onClick={() => setSelectedTag(t.name)}
+                  onClick={() => setSelectedTag('')}
                   className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all whitespace-nowrap ${
-                    selectedTag === t.name ? 'bg-emerald-500 text-[#020617] border-emerald-400' : 'bg-white/5 text-slate-500 border-white/5'
+                    selectedTag === '' ? 'bg-white text-[#020617] border-white shadow-lg' : 'bg-white/5 text-slate-500 border-white/5'
                   }`}
                 >
-                  {t.name}
+                  All Nodes
                 </button>
-              ))}
+                {tagsData.slice(0, 15).map((t: any) => (
+                  <button 
+                    key={t.name}
+                    onClick={() => setSelectedTag(t.name)}
+                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all whitespace-nowrap flex items-center gap-2 ${
+                      selectedTag === t.name ? 'bg-emerald-500 text-[#020617] border-emerald-400 shadow-lg' : 'bg-white/5 text-slate-500 border-white/5'
+                    }`}
+                  >
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              <button 
+                onClick={() => setShowTagExplorer(true)}
+                className="p-2 bg-white/5 rounded-lg border border-white/10 text-slate-400 hover:text-emerald-400 hover:border-emerald-500/30 transition-all shadow-xl mb-1"
+                title="Explore 100+ Tags"
+              >
+                <Filter className="w-3.5 h-3.5" />
+              </button>
             </motion.div>
           )}
         </div>
       </header>
 
-      {/* Deep Space Content Area */}
+      {/* Tag Explorer Modal (Taisaku for 100+ tags) */}
+      <AnimatePresence>
+        {showTagExplorer && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowTagExplorer(false)}
+              className="absolute inset-0 bg-[#020617]/95 backdrop-blur-md" 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-lg bg-[#0f172a] rounded-[2.5rem] border border-white/10 shadow-2xl overflow-hidden flex flex-col h-[65vh]"
+            >
+              <div className="p-8 border-b border-white/5 space-y-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black text-white tracking-tighter">Tag Explorer</h3>
+                  <button onClick={() => setShowTagExplorer(false)} className="p-2.5 bg-white/5 rounded-xl text-slate-500 hover:text-white transition-colors">
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Search in 100+ tags..." 
+                    autoFocus
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl text-sm font-bold text-white outline-none focus:border-emerald-500/50 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-8 no-scrollbar">
+                <div className="flex flex-wrap gap-2">
+                  {filteredTags.map((t: any) => (
+                    <button 
+                      key={t.name}
+                      onClick={() => { setSelectedTag(t.name); setShowTagExplorer(false); }}
+                      className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all flex items-center gap-3 ${
+                        selectedTag === t.name 
+                        ? 'bg-emerald-500 text-[#020617] border-emerald-400' 
+                        : 'bg-white/5 text-slate-400 border-white/5 hover:border-emerald-500/30'
+                      }`}
+                    >
+                      <TagIcon className="w-3 h-3 opacity-30" />
+                      {t.name}
+                      <span className="opacity-30 bg-black/20 px-1.5 py-0.5 rounded-md text-[8px]">{t.count}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
       <main className="flex-1 overflow-y-auto overscroll-y-contain pb-24 no-scrollbar">
         <div className="max-w-5xl mx-auto p-4 md:p-6 animate-fade-in">
-          {/* We pass the state to the outlet via context or just use global stores if needed. 
-              For simplicity now, I'll use a hacky event or just keep it in layout and pass down if I refactor more.
-              Actually, I'll use window events or a simple state sharing for this demo. */}
           <Outlet context={{ search, selectedTag, showArchived }} />
         </div>
       </main>

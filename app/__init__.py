@@ -45,14 +45,44 @@ async def seed_defaults():
             ("TELEGRAM_BOT_TOKEN", "", "Telegram Bot API Token", "bot"),
             ("TELEGRAM_WEBHOOK_URL", "", "Public webhook URL for Telegram", "bot"),
             ("TELEGRAM_WEB_BASE_URL", "http://localhost:5070", "Base URL for opening reminders on web", "bot"),
-            ("PUSH_SCHEDULE_HOURS", "8,12,20", "Comma-separated push hours (24h format)", "scheduler"),
+            ("PUSH_SCHEDULE_HOURS", "8,12,20", "Comma-separated push hours (Old System)", "scheduler"),
             ("PUSH_TIMEZONE", "Asia/Ho_Chi_Minh", "Timezone for scheduled pushes", "scheduler"),
             ("MAX_DAILY_PUSHES", "15", "Maximum push notifications per day", "scheduler"),
+            ("GLOBAL_PUSH_INTERVAL", "60", "Global push interval in minutes", "scheduler"),
+            ("GLOBAL_ACTIVE_START", "8", "Global active hour start (0-23)", "scheduler"),
+            ("GLOBAL_ACTIVE_END", "22", "Global active hour end (0-23)", "scheduler"),
+            ("VAPID_PUBLIC_KEY", "", "VAPID Public Key for Web Push", "security"),
+            ("VAPID_PRIVATE_KEY", "", "VAPID Private Key for Web Push", "security"),
+            ("ENABLE_TELEGRAM_PUSH", "true", "Enable system-wide Telegram notifications", "scheduler"),
+            ("ENABLE_WEB_PUSH", "true", "Enable system-wide Chrome notifications", "scheduler"),
+            ("CENTRAL_AUTH_URL", "http://localhost:5000", "CentralAuth Server URL", "sso"),
+            ("CENTRAL_AUTH_CLIENT_ID", "reminote-v1", "SSO Client ID", "sso"),
+            ("CENTRAL_AUTH_CLIENT_SECRET", "reminote_secret_xxx", "SSO Client Secret", "sso"),
+            ("ENABLE_SSO", "true", "Enable CentralAuth SSO Integration", "sso"),
         ]
+        
+        # Check if we need to generate VAPID keys
+        vapid_pub = ""
+        vapid_priv = ""
+        
         for key, value, desc, cat in default_settings:
             result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
-            if not result.scalar_one_or_none():
-                db.add(SystemSetting(key=key, value=value, description=desc, category=cat))
+            existing = result.scalar_one_or_none()
+            
+            if not existing:
+                val = value
+                if key == "VAPID_PUBLIC_KEY" or key == "VAPID_PRIVATE_KEY":
+                    if not vapid_pub:
+                        try:
+                            from pyvapid import Vapid
+                            v = Vapid()
+                            v.generate_keys()
+                            vapid_pub = v.public_key
+                            vapid_priv = v.private_key
+                        except Exception: pass
+                    val = vapid_pub if key == "VAPID_PUBLIC_KEY" else vapid_priv
+                
+                db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
 
         await db.commit()
 
@@ -93,11 +123,16 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
-    """Create and configure the FastAPI application."""
+    """Application factory for RemiNote Knowledge OS."""
+    
+    # 1. Run migrations first
+    from app.services.migration_service import run_auto_migrations
+    run_auto_migrations()
+
     app = FastAPI(
-        title=settings.APP_NAME,
-        version=settings.APP_VERSION,
-        description="Aggressive Knowledge Reinforcement System",
+        title="RemiNote Knowledge OS",
+        description="Dual-channel knowledge reinforcement system.",
+        version="1.2.0",
         lifespan=lifespan,
     )
 

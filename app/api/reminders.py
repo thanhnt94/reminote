@@ -2,17 +2,19 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 
 from app.database import get_db
 from app.models.user import User
 from app.models.reminder import Reminder, Attachment
-from sqlalchemy import select, func
 from app.api.auth import get_current_user
 from app.schemas.reminder import (
     ReminderCreate, ReminderUpdate, ReminderResponse,
     InteractionRequest, ReminderListResponse, TagUpdate,
 )
-from app.services import reminder_service, image_service
+from app.services import reminder_service, image_service, bot_service
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+import random
 
 router = APIRouter()
 
@@ -91,7 +93,7 @@ async def get_due(
 ):
     """Get due reminders."""
     items, _ = await reminder_service.list_reminders(
-        db, user_id=user.id, due_only=True, limit=50
+        db, user_id=user.id, due_only=True, archived=False, limit=50
     )
     return [ReminderResponse.model_validate(r) for r in items]
 
@@ -238,3 +240,48 @@ async def upload_attachments(
     await db.commit()
     await db.refresh(reminder, attribute_names=["attachments", "tags_rel"])
     return ReminderResponse.model_validate(reminder)
+
+
+@router.post("/test-push")
+async def test_push(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Trigger a test knowledge digest immediately."""
+    if not user.telegram_chat_id:
+        raise HTTPException(status_code=400, detail="Telegram not linked")
+
+    # Fetch 3 items for test
+    from sqlalchemy.orm import selectinload
+    stmt = (
+        select(Reminder)
+        .where(Reminder.user_id == user.id)
+        .limit(3)
+        .options(selectinload(Reminder.attachments))
+    )
+    res = await db.execute(stmt)
+    items = res.scalars().all()
+    
+    if not items:
+        raise HTTPException(status_code=400, detail="No notes to send")
+
+    digest_text = "🧪 **TEST KNOWLEDGE DIGEST**\n\nĐây là tin nhắn kiểm tra tính năng thông báo gom nhóm:\n\n"
+    for i, item in enumerate(items):
+        digest_text += f"{i+1}. {item.title or 'Note'}\n"
+    
+    keyboard = [[InlineKeyboardButton("🚀 Open Review Mode", url=f"http://127.0.0.1:5070/review")]]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        if not bot_service.bot:
+            raise HTTPException(status_code=503, detail="Bot service not initialized yet. Try testing connection in Admin settings.")
+            
+        await bot_service.bot.send_message(
+            chat_id=user.telegram_chat_id, 
+            text=digest_text, 
+            reply_markup=reply_markup, 
+            parse_mode='Markdown'
+        )
+        return {"status": "success", "message": "Neural Digest dispatched to Telegram."}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Bot error: {str(e)}")

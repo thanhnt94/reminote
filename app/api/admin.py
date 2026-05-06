@@ -86,6 +86,11 @@ async def test_bot(
 
             if data.get("ok"):
                 bot_info = data["result"]
+                # Try to initialize the bot background task too
+                from app.services.bot_service import init_bot_app
+                import asyncio
+                asyncio.create_task(init_bot_app())
+                
                 return {
                     "success": True,
                     "bot_name": bot_info.get("first_name"),
@@ -212,4 +217,71 @@ async def test_push(
     if not success:
         raise HTTPException(status_code=500, detail="Gửi thất bại. Kiểm tra cấu hình Bot Token.")
 
-    return {"status": "success", "message": "Thông báo test đã được gửi!"}
+@router.post("/bot/broadcast-test")
+async def broadcast_test(
+    admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Send a test push to ALL channels (Telegram + Web) of the admin."""
+    results = {"telegram": "skipped", "web_push": "skipped"}
+    
+    # Fetch 1 random reminder for payload
+    res = await db.execute(select(Reminder).where(Reminder.user_id == admin.id).limit(1))
+    item = res.scalar_one_or_none()
+    title = item.title if item else "Neural Test Core"
+    
+    # 1. Telegram
+    if admin.telegram_chat_id:
+        from app.services.bot_service import bot
+        try:
+            if bot:
+                await bot.send_message(
+                    chat_id=admin.telegram_chat_id, 
+                    text=f"🧪 **UNIVERSAL ADMIN TEST**\n\nKiểm tra hệ thống thông báo đa nền tảng.\nNode: {title}",
+                    parse_mode='Markdown'
+                )
+                results["telegram"] = "success"
+            else:
+                results["telegram"] = "error: bot not initialized"
+        except Exception as e:
+            results["telegram"] = f"error: {str(e)}"
+
+    # 2. Web Push
+    from app.services.push_service import broadcast_web_push
+    try:
+        count = await broadcast_web_push(admin.id, {
+            "title": "🧪 UNIVERSAL ADMIN TEST",
+            "body": f"Kiểm tra hệ thống Chrome Push. Node: {title}",
+            "url": "http://127.0.0.1:5070/admin"
+        })
+        results["web_push"] = f"success ({count} devices)"
+    except Exception as e:
+        results["web_push"] = f"error: {str(e)}"
+
+    return results
+
+@router.post("/sso/test")
+async def test_sso_connection(
+    db: AsyncSession = Depends(get_db)
+):
+    """Verify if the CentralAuth server is reachable."""
+    from app.models.setting import SystemSetting
+    res = await db.execute(select(SystemSetting).where(SystemSetting.key == "CENTRAL_AUTH_URL"))
+    url_setting = res.scalar_one_or_none()
+    
+    if not url_setting or not url_setting.value:
+        return {"success": false, "error": "CENTRAL_AUTH_URL not configured"}
+        
+    url = url_setting.value.rstrip('/')
+    try:
+        import httpx
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            # Try to hit the public 'me' or health endpoint of CentralAuth
+            # Most CentralAuth servers in this ecosystem have a /api/health or /
+            resp = await client.get(f"{url}/")
+            if resp.status_code < 500:
+                return {"success": True, "message": f"CentralAuth reachable (Status: {resp.status_code})"}
+            else:
+                return {"success": False, "error": f"Server error: {resp.status_code}"}
+    except Exception as e:
+        return {"success": False, "error": f"Connection failed: {str(e)}"}

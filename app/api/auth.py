@@ -97,44 +97,116 @@ async def logout(response: Response):
     return {"message": "Logged out"}
 
 
-# --- CentralAuth SSO ---
-@router.get("/auth/sso/login")
-async def sso_login():
+@router.put("/api/auth/profile/settings")
+async def update_settings(
+    data: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Update user notification settings."""
+    if "push_interval_minutes" in data:
+        user.push_interval_minutes = int(data["push_interval_minutes"])
+    if "quiet_hour_start" in data:
+        user.quiet_hour_start = int(data["quiet_hour_start"])
+    if "quiet_hour_end" in data:
+        user.quiet_hour_end = int(data["quiet_hour_end"])
+    
+    await db.commit()
+    return {"status": "success"}
+
+
+@router.post("/api/auth/profile/link-telegram")
+async def link_telegram_username(
+    data: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Link user by Telegram username lookup."""
+    if "telegram_username" not in data:
+        raise HTTPException(status_code=400, detail="Username required")
+    
+    tg_username = data["telegram_username"].lower().lstrip('@')
+    
+    from app.models.user import TelegramConnection
+    result = await db.execute(select(TelegramConnection).where(TelegramConnection.username == tg_username))
+    conn = result.scalar_one_or_none()
+    
+    if not conn:
+        raise HTTPException(status_code=404, detail="Username not found in bot cache. Please chat with the bot first!")
+    
+    user.telegram_chat_id = conn.chat_id
+    await db.commit()
+    
+    return {"status": "success", "chat_id": conn.chat_id}
+    return redirect
+
+# --- Standardized SSO Protocol (Mindstack Ecosystem) ---
+
+async def get_sso_config(db: AsyncSession):
+    """Helper to fetch SSO settings from DB."""
+    from app.models.setting import SystemSetting
+    res = await db.execute(select(SystemSetting).where(SystemSetting.category == "sso"))
+    rows = res.scalars().all()
+    config = {s.key: s.value for s in rows}
+    return config
+
+@router.get("/auth-center/login")
+async def sso_login(db: AsyncSession = Depends(get_db)):
     """Redirect to CentralAuth for SSO login."""
+    config = await get_sso_config(db)
+    
+    # Check if SSO is enabled
+    if config.get("ENABLE_SSO", "true").lower() != "true":
+        raise HTTPException(status_code=503, detail="SSO Integration is currently disabled by administrator.")
+
+    server_url = config.get("CENTRAL_AUTH_URL", "http://localhost:5000")
+    client_id = config.get("CENTRAL_AUTH_CLIENT_ID", "reminote-v1")
+    
+    # Construction of redirect_uri
+    base_url = "http://127.0.0.1:5070" # Should be dynamic in prod
+    redirect_uri = f"{base_url}/auth-center/callback"
+    
     auth_url = (
-        f"{settings.CENTRAL_AUTH_URL}/api/auth/authorize"
-        f"?client_id={settings.CENTRAL_AUTH_CLIENT_ID}"
-        f"&redirect_uri={settings.SSO_REDIRECT_URI}"
+        f"{server_url}/api/auth/authorize"
+        f"?client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
         f"&response_type=code"
     )
     return RedirectResponse(url=auth_url)
 
 
-@router.get("/auth/sso/callback")
+@router.get("/auth-center/callback")
 async def sso_callback(code: str, response: Response, db: AsyncSession = Depends(get_db)):
     """Handle CentralAuth SSO callback — exchange code for token."""
+    config = await get_sso_config(db)
+    server_url = config.get("CENTRAL_AUTH_URL", "http://localhost:5000")
+    client_id = config.get("CENTRAL_AUTH_CLIENT_ID", "reminote-v1")
+    client_secret = config.get("CENTRAL_AUTH_CLIENT_SECRET", "reminote_secret_xxx")
+    base_url = "http://127.0.0.1:5070"
+    redirect_uri = f"{base_url}/auth-center/callback"
+
     try:
         async with httpx.AsyncClient() as client:
             # Exchange authorization code for access token
             token_resp = await client.post(
-                f"{settings.CENTRAL_AUTH_URL}/api/auth/token",
+                f"{server_url}/api/auth/token",
                 json={
                     "grant_type": "authorization_code",
                     "code": code,
-                    "client_id": settings.CENTRAL_AUTH_CLIENT_ID,
-                    "client_secret": settings.CENTRAL_AUTH_CLIENT_SECRET,
-                    "redirect_uri": settings.SSO_REDIRECT_URI,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
                 },
             )
             if token_resp.status_code != 200:
-                raise HTTPException(status_code=401, detail="SSO token exchange failed")
+                raise HTTPException(status_code=401, detail=f"SSO token exchange failed: {token_resp.text}")
 
             token_data = token_resp.json()
             sso_token = token_data.get("access_token")
 
             # Get user info from CentralAuth
             user_resp = await client.get(
-                f"{settings.CENTRAL_AUTH_URL}/api/auth/me",
+                f"{server_url}/api/auth/me",
                 headers={"Authorization": f"Bearer {sso_token}"},
             )
             if user_resp.status_code != 200:
@@ -175,6 +247,9 @@ async def sso_callback(code: str, response: Response, db: AsyncSession = Depends
 
     # Create local JWT and redirect to app
     token = create_access_token(user.id, user.username, user.is_admin)
+    
+    # We redirect to the frontend with the cookie set
+    # Using a simple HTML or directly setting cookie in redirect
     redirect = RedirectResponse(url="/", status_code=302)
     redirect.set_cookie(
         key="access_token",
@@ -184,3 +259,65 @@ async def sso_callback(code: str, response: Response, db: AsyncSession = Depends
         max_age=settings.JWT_EXPIRE_MINUTES * 60,
     )
     return redirect
+
+@router.post("/auth-center/webhook/backchannel-log")
+async def backchannel_logout(request: Request, db: AsyncSession = Depends(get_db)):
+    """Handle Global Logout from CentralAuth."""
+    data = await request.json()
+    sso_user_id = data.get("sso_user_id")
+    
+    if not sso_user_id:
+        return {"status": "ignored"}
+    
+    # In a cookie-based system, we can't 'force' logout a browser from a webhook
+    # unless we use a blacklist or session table.
+    # For now, we log it. In a production app, we would invalidate the user's sessions in Redis/DB.
+    print(f"[SSO] Backchannel logout request for SSO User ID: {sso_user_id}")
+    return {"status": "success"}
+
+@router.get("/api/auth/vapid-public-key")
+async def get_vapid_public_key(db: AsyncSession = Depends(get_db)):
+    """Provide the VAPID public key for the frontend."""
+    from app.models.setting import SystemSetting
+    result = await db.execute(select(SystemSetting).where(SystemSetting.key == "VAPID_PUBLIC_KEY"))
+    setting = result.scalar_one_or_none()
+    if not setting or not setting.value:
+        raise HTTPException(status_code=503, detail="Web push not configured")
+    return {"publicKey": setting.value}
+
+@router.post("/api/auth/profile/web-push")
+async def register_web_push(
+    data: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Register a browser push subscription."""
+    from app.models.user import WebPushSubscription
+    
+    endpoint = data.get("endpoint")
+    keys = data.get("keys", {})
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+    
+    if not endpoint or not p256dh or not auth:
+        raise HTTPException(status_code=400, detail="Invalid subscription data")
+        
+    # Check if exists
+    result = await db.execute(select(WebPushSubscription).where(WebPushSubscription.endpoint == endpoint))
+    existing = result.scalar_one_or_none()
+    
+    if existing:
+        existing.user_id = user.id # Re-assign to current user
+        existing.p256dh = p256dh
+        existing.auth = auth
+    else:
+        new_sub = WebPushSubscription(
+            user_id=user.id,
+            endpoint=endpoint,
+            p256dh=p256dh,
+            auth=auth
+        )
+        db.add(new_sub)
+        
+    await db.commit()
+    return {"status": "success"}

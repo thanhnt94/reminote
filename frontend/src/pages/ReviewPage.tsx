@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 import { Brain, X, Check, Zap, RotateCcw, Cpu, Sparkles } from 'lucide-react'
 import api from '@/api/client'
 import MemoryBadge from '@/components/MemoryBadge'
+import MarkdownRenderer from '@/components/MarkdownRenderer'
 
 interface Reminder {
   id: number
@@ -125,9 +126,9 @@ export default function ReviewPage() {
                       <img src={`/api/attachments/${currentItem.attachments[0].id}/file`} className="w-full h-auto opacity-90" />
                     </div>
                   )}
-                  <p className="text-slate-300 text-lg font-medium leading-relaxed whitespace-pre-wrap pb-10">
-                    {currentItem.content_text}
-                  </p>
+                  <div className="pb-10">
+                    <MarkdownRenderer content={currentItem.content_text || ''} />
+                  </div>
                 </div>
                 
                 <div className="p-8 bg-black/40 backdrop-blur-md border-t border-white/5 flex gap-4">
@@ -218,9 +219,13 @@ function SwipeCard({ item, onSwipe, onTap }: { item: Reminder, onSwipe: (dir: 'l
           <h2 className="text-4xl font-black text-white tracking-tighter leading-none drop-shadow-2xl">
             {item.title || 'Untitled Fragment'}
           </h2>
-          <p className="text-slate-400 text-sm font-medium line-clamp-3 leading-relaxed">
-            {item.content_text}
-          </p>
+          <div className="relative max-h-[80px] overflow-hidden">
+            <MarkdownRenderer 
+              content={item.content_text || ''} 
+              className="!text-slate-400 !text-xs !leading-relaxed pointer-events-none" 
+            />
+            <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-[#020617] to-transparent" />
+          </div>
         </div>
         
         <div className="pt-6 flex items-center gap-3">

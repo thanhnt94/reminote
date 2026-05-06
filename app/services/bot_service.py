@@ -8,8 +8,9 @@ from app.config import get_settings
 
 logger = logging.getLogger("reminote.bot")
 
-# Global application instance
+# Global instances
 _bot_app = None
+bot = None # Exposed for other services
 
 async def get_bot_token():
     async with async_session() as db:
@@ -25,8 +26,26 @@ async def get_web_base_url():
         setting = result.scalar_one_or_none()
         return setting.value if setting else "http://localhost:5070"
 
+async def stop_bot_app():
+    global _bot_app, bot
+    if _bot_app:
+        try:
+            if _bot_app.updater:
+                await _bot_app.updater.stop()
+            await _bot_app.stop()
+            await _bot_app.shutdown()
+            logger.info("Telegram Bot stopped.")
+        except Exception as e:
+            logger.error(f"Error stopping bot: {e}")
+        finally:
+            _bot_app = None
+            bot = None
+
 async def init_bot_app():
-    global _bot_app
+    global _bot_app, bot
+    if _bot_app:
+        await stop_bot_app()
+
     token = await get_bot_token()
     if not token:
         logger.warning("TELEGRAM_BOT_TOKEN not found in settings. Bot is disabled.")
@@ -34,6 +53,8 @@ async def init_bot_app():
 
     try:
         app = Application.builder().token(token).build()
+        bot = app.bot # Assign global bot instance
+        
         from app.bot.handlers import handle_start, handle_link, handle_message, handle_photo, handle_callback
         
         app.add_handler(CommandHandler("start", handle_start))
@@ -44,9 +65,11 @@ async def init_bot_app():
         
         await app.initialize()
         await app.start()
+        await app.updater.start_polling() # IMPORTANT: Actually listen for messages!
         
         _bot_app = app
-        logger.info("Telegram Bot Application initialized successfully.")
+        logger.info("Telegram Bot Application initialized and POLLING started.")
+        print("DEBUG: Telegram Bot is now ONLINE and listening for messages.")
         return app
     except Exception as e:
         logger.error(f"Failed to initialize Telegram Bot: {e}")

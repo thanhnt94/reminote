@@ -12,57 +12,63 @@ from app.services.reminder_service import create_reminder, process_interaction
 
 logger = logging.getLogger("reminote.bot")
 
-async def get_user_by_chat_id(chat_id: int):
+async def get_user_by_chat_id(chat_id: str):
     async with async_session() as db:
         from sqlalchemy import select
-        result = await db.execute(select(User).where(User.telegram_chat_id == str(chat_id)))
+        result = await db.execute(select(User).where(User.telegram_chat_id == chat_id))
         return result.scalar_one_or_none()
+
+async def sync_telegram_connection(username: str | None, chat_id: str):
+    """Save username -> chat_id mapping for web-app lookup."""
+    print(f"DEBUG: Syncing Telegram connection for {username} (ID: {chat_id})")
+    if not username: return
+    async with async_session() as db:
+        from app.models.user import TelegramConnection
+        from sqlalchemy.dialects.sqlite import insert
+        stmt = insert(TelegramConnection).values(
+            username=username.lower().lstrip('@'), 
+            chat_id=chat_id,
+            updated_at=datetime.now()
+        ).on_conflict_do_update(
+            index_elements=['username'],
+            set_={'chat_id': chat_id, 'updated_at': datetime.now()}
+        )
+        await db.execute(stmt)
+        await db.commit()
 
 async def handle_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /start command."""
-    chat_id = update.effective_chat.id
+    chat_id = str(update.effective_chat.id)
+    username = update.effective_user.username
+    print(f"DEBUG: Received /start from {username} ({chat_id})")
+    
+    await sync_telegram_connection(username, chat_id)
+    
     user = await get_user_by_chat_id(chat_id)
     
     if user:
         await update.message.reply_text(
             f"Welcome back, {user.username}! 🛡️\n\n"
-            "Submit any text or visual assets here. I will integrate them into your long-term knowledge repository."
+            "Node synchronization is ACTIVE. Submit any knowledge fragments here."
         )
     else:
-        await update.message.reply_text(
-            "Welcome to RemiNote Knowledge OS! 🛡️\n\n"
-            "To begin integration, link your identity by sending:\n"
-            "`/link <username>`\n\n"
-            "Example: `/link admin`",
-            parse_mode="Markdown"
-        )
+        msg = "Welcome to RemiNote Knowledge OS! 🛡️\n\n"
+        if username:
+            msg += f"Your Telegram identity `{username}` has been cached.\nGo to Web App Settings and enter your username to complete synchronization."
+        else:
+            msg += "⚠️ You don't have a Telegram Username. Please set one in Telegram Settings first, then chat with me again."
+        
+        await update.message.reply_text(msg, parse_mode="Markdown")
 
 async def handle_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Handle /link <username> command."""
-    if not context.args:
-        await update.message.reply_text("Please provide your username. Example: `/link admin`")
-        return
-
-    username = context.args[0]
-    chat_id = str(update.effective_chat.id)
-
-    async with async_session() as db:
-        from sqlalchemy import select
-        result = await db.execute(select(User).where(User.username == username))
-        user = result.scalar_one_or_none()
-
-        if not user:
-            await update.message.reply_text(f"Identity '{username}' not found in the system.")
-            return
-
-        user.telegram_chat_id = chat_id
-        await db.commit()
-        
-        await update.message.reply_text(
-            f"✅ Identity `{username}` successfully linked to this node.\n\n"
-            "You can now submit research notes and media for active reinforcement.",
-            parse_mode="Markdown"
-        )
+    """Handle /link command (informational now)."""
+    await update.message.reply_text(
+        "Identity synchronization is now automatic!\n\n"
+        "1. Set a username in Telegram (e.g., @yourname).\n"
+        "2. Go to RemiNote Web Settings.\n"
+        "3. Enter your Telegram username there.\n"
+        "Done! ✅"
+    )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle incoming text messages."""

@@ -1,105 +1,138 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '@/stores/useAuthStore'
 import { motion } from 'framer-motion'
-import { Brain, Lock, User, ArrowRight, Sparkles } from 'lucide-react'
+import { ShieldCheck, User, Lock, ArrowRight, Brain, Zap, Globe } from 'lucide-react'
+import { useAuthStore } from '@/stores/useAuthStore'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  
   const { login } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
     setError('')
     try {
       await login(username, password)
       navigate('/dashboard')
-    } catch (err) {
-      setError('Sai tên đăng nhập hoặc mật khẩu')
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Authentication failed. Access denied.')
+    } finally {
+      setLoading(false)
     }
   }
 
+  const handleSSO = () => {
+    window.location.href = '/auth-center/login'
+  }
+
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 relative overflow-hidden">
-      {/* Decorative Background Elements */}
-      <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-amber-200/20 blur-[120px] rounded-full animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-200/10 blur-[120px] rounded-full" />
+    <div className="min-h-screen bg-[#020617] flex items-center justify-center p-6 relative overflow-hidden">
+      {/* Background Ambient Glows */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-emerald-500/10 blur-[150px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-blue-500/10 blur-[150px] rounded-full pointer-events-none" />
 
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md z-10"
+        className="w-full max-w-[450px] space-y-10 relative z-10"
       >
-        <div className="text-center mb-10">
-          <div className="inline-block p-4 bg-white rounded-3xl shadow-xl shadow-amber-500/10 mb-6 border border-slate-50 rotate-6">
-            <Brain className="w-12 h-12 text-amber-500" />
+        {/* Brand Header */}
+        <div className="text-center space-y-4">
+          <div className="inline-flex p-5 bg-white/5 border border-white/10 rounded-[2.5rem] shadow-2xl relative group">
+             <div className="absolute inset-0 bg-emerald-500/20 blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+             <Brain className="w-12 h-12 text-emerald-500 relative z-10" />
           </div>
-          <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2">RemiNote</h1>
-          <p className="text-slate-400 font-bold text-xs uppercase tracking-[0.3em]">Spaced Repetition System</p>
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black text-white tracking-tighter uppercase italic">
+              Remi<span className="text-emerald-500 not-italic">Note</span>
+            </h1>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.5em]">Aggressive Knowledge OS</p>
+          </div>
         </div>
 
-        <div className="bg-white rounded-[3rem] p-8 md:p-10 shadow-2xl shadow-slate-200/50 border border-slate-50 relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-5">
-            <Sparkles className="w-20 h-20 text-amber-500" />
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Tài khoản</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-slate-300 group-focus-within:text-amber-500 transition-colors" />
+        {/* Login Card */}
+        <div className="bg-[#0f172a]/50 backdrop-blur-3xl border border-white/5 rounded-[3.5rem] p-10 shadow-2xl space-y-8">
+           {/* SSO Quick Link */}
+           <button 
+            onClick={handleSSO}
+            className="w-full flex items-center justify-between p-5 bg-emerald-500 text-[#020617] rounded-3xl hover:bg-emerald-400 transition-all active:scale-95 group shadow-xl shadow-emerald-500/20"
+           >
+              <div className="flex items-center gap-4">
+                <div className="p-2 bg-black/10 rounded-xl">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
-                <input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                  placeholder="admin"
-                  required
-                />
+                <span className="text-sm font-black uppercase tracking-tight">SSO Authorization</span>
               </div>
-            </div>
+              <ArrowRight className="w-5 h-5 opacity-40 group-hover:translate-x-1 transition-transform" />
+           </button>
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mật khẩu</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Lock className="h-5 w-5 text-slate-300 group-focus-within:text-amber-500 transition-colors" />
+           <div className="flex items-center gap-4">
+              <div className="h-px flex-1 bg-white/5" />
+              <span className="text-[9px] font-black text-slate-700 uppercase tracking-widest">Internal Protocol</span>
+              <div className="h-px flex-1 bg-white/5" />
+           </div>
+
+           <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                 <div className="relative group">
+                    <User className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
+                    <input 
+                      type="text" 
+                      placeholder="Node Operator ID"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full pl-14 pr-6 py-4 bg-black/40 border border-white/5 rounded-2xl text-sm font-bold text-white focus:border-emerald-500/30 outline-none transition-all placeholder:text-slate-800"
+                      required
+                    />
+                 </div>
+                 <div className="relative group">
+                    <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
+                    <input 
+                      type="password" 
+                      placeholder="Access Cipher"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full pl-14 pr-6 py-4 bg-black/40 border border-white/5 rounded-2xl text-sm font-bold text-white focus:border-emerald-500/30 outline-none transition-all placeholder:text-slate-800"
+                      required
+                    />
+                 </div>
+              </div>
+
+              {error && (
+                <div className="flex items-center gap-3 p-4 bg-red-500/5 border border-red-500/20 rounded-2xl animate-shake">
+                   <Zap className="w-4 h-4 text-red-500" />
+                   <p className="text-[10px] font-black text-red-400 uppercase leading-tight">{error}</p>
                 </div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-12 pr-4 py-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-900 font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all"
-                  placeholder="•••••"
-                  required
-                />
-              </div>
-            </div>
+              )}
 
-            {error && (
-              <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-red-500 text-xs font-bold text-center bg-red-50 py-2 rounded-lg border border-red-100">
-                {error}
-              </motion.p>
-            )}
-
-            <button
-              type="submit"
-              className="w-full py-4 bg-amber-500 text-white rounded-2xl font-black text-sm uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-amber-600 shadow-xl shadow-amber-500/30 transition-all active:scale-95 group"
-            >
-              Đăng nhập
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </form>
+              <button 
+                type="submit" 
+                disabled={loading}
+                className="w-full py-5 bg-white/5 border border-white/10 text-white rounded-3xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-white/10 hover:border-white/20 transition-all active:scale-95 disabled:opacity-30"
+              >
+                {loading ? 'Decrypting Access...' : 'Initiate Secure Login'}
+              </button>
+           </form>
         </div>
 
-        <p className="text-center mt-10 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
-          Phát triển bởi <span className="text-slate-600">Ecosystem Team</span>
-        </p>
+        {/* Footer Info */}
+        <div className="flex items-center justify-center gap-8 opacity-20 hover:opacity-40 transition-opacity">
+           <div className="flex items-center gap-2">
+              <Globe className="w-3.5 h-3.5 text-white" />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest">v1.2.0-core</span>
+           </div>
+           <div className="w-1.5 h-1.5 bg-slate-600 rounded-full" />
+           <div className="flex items-center gap-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-white" />
+              <span className="text-[9px] font-black text-white uppercase tracking-widest">Protected Environment</span>
+           </div>
+        </div>
       </motion.div>
     </div>
   )
