@@ -12,8 +12,10 @@ from app.schemas.user import UserLogin, UserResponse, TokenResponse
 from app.services.auth_service import verify_password, create_access_token, decode_access_token
 from app.config import get_settings
 
+import logging
 router = APIRouter()
 settings = get_settings()
+logger = logging.getLogger("reminote.auth")
 
 
 # --- Dependency: Get current user from JWT ---
