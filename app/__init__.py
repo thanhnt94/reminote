@@ -163,9 +163,16 @@ def create_app() -> FastAPI:
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
+        # 1. Check if it's an API route that missed
         if full_path.startswith("api/"):
             return JSONResponse(status_code=404, content={"detail": "Not Found"})
             
+        # 2. Check if the file exists in dist_dir (e.g. sw.js, manifest.json)
+        requested_file = dist_dir / full_path
+        if full_path and requested_file.exists() and requested_file.is_file():
+            return FileResponse(str(requested_file))
+
+        # 3. Fallback to index.html for SPA routing
         index_file = dist_dir / "index.html"
         if index_file.exists():
             return FileResponse(str(index_file))
