@@ -38,8 +38,4 @@ async def get_db() -> AsyncSession:
             await session.close()
 
 
-async def init_db():
-    """Create all tables on startup."""
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    print("  [DB] Database tables initialized.")
+# init_db is removed. Use app.services.migration_service.run_auto_migrations() instead.

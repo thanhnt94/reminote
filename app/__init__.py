@@ -12,7 +12,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from sqlalchemy import select
 
 from app.config import get_settings
-from app.database import init_db, async_session
+from app.database import async_session
 from app.models.user import User
 from app.models.setting import SystemSetting
 from app.services.auth_service import hash_password
@@ -94,17 +94,19 @@ async def lifespan(app: FastAPI):
     try:
         logger.info(f"Starting {settings.APP_NAME} v{settings.APP_VERSION}")
         
-        # 1. Initialize DB tables
-        await init_db()
+        # 1. Ensure Storage is ready
+        settings.DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        settings.UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
         
-        # 2. Seed default data (admin, settings)
-        await seed_defaults()
-        
-        # 3. Run migrations (if any)
+        # 2. Run migrations (This handles table creation properly)
         try:
             run_auto_migrations()
         except Exception as e:
-            logger.warning(f"Migrations skipped: {e}")
+            logger.error(f"Migration failed: {e}")
+            # In production, we might want to exit here, but we'll try to seed anyway
+        
+        # 3. Seed default data (admin, settings)
+        await seed_defaults()
 
         # 4. Services
         await init_bot_app()
@@ -125,9 +127,8 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """Application factory for RemiNote Knowledge OS."""
     
-    # 1. Run migrations first
-    from app.services.migration_service import run_auto_migrations
-    run_auto_migrations()
+    # Migrations will be run in the lifespan context to avoid blocking worker startup too long
+    # and to ensure DATABASE_URL is fully resolved via Pydantic
 
     app = FastAPI(
         title="RemiNote Knowledge OS",

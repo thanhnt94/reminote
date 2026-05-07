@@ -20,7 +20,7 @@ if __name__ == "__main__":
 
     # Ensure essential directories
     base_dir = os.path.dirname(os.path.abspath(__file__))
-    storage_dir = os.path.abspath(os.path.join(base_dir, '..', 'Storage'))
+    storage_dir = os.path.join(base_dir, 'Storage')
 
     for d in [
         os.path.join(storage_dir, 'database'),
