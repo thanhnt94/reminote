@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { ChevronRight, Box, Archive, RefreshCcw } from 'lucide-react'
+import { ChevronRight, Box, Archive, RefreshCcw, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import api from '@/api/client'
@@ -40,22 +40,30 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
     <motion.div 
       layout
       whileHover={{ y: -6, scale: 1.01 }}
-      className={`relative bg-[#0f172a] rounded-[2.5rem] border overflow-hidden transition-all group h-[270px] flex flex-col shadow-2xl ${
+      className={`relative bg-[#0f172a] rounded-[2.5rem] border overflow-hidden transition-all group h-[280px] flex flex-col shadow-2xl ${
         isDue ? 'border-emerald-500/30 ring-1 ring-emerald-500/10 glow-emerald' : 'border-white/5'
-      } ${reminder.is_archived ? 'opacity-40' : ''}`}
+      } ${reminder.is_archived ? 'opacity-60' : ''}`}
     >
-      {/* Quick Archive Action */}
+      {/* Quick Archive/Restore Action - Always visible on mobile/archived */}
       <button 
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); archiveMutation.mutate(); }}
-        className={`absolute top-4 right-4 z-20 p-2 rounded-xl border backdrop-blur-md transition-all active:scale-90 ${
+        className={`absolute top-4 right-4 z-20 p-2.5 rounded-xl border backdrop-blur-md transition-all active:scale-90 flex items-center justify-center ${
           reminder.is_archived 
-          ? 'bg-emerald-500 text-[#020617] border-emerald-400 opacity-100' 
-          : 'bg-black/20 text-white/40 border-white/10 opacity-0 group-hover:opacity-100 hover:text-emerald-400 hover:border-emerald-500/50'
+          ? 'bg-amber-500 text-black border-amber-400 opacity-100 shadow-lg' 
+          : 'bg-white/5 text-slate-400 border-white/10 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-emerald-400 hover:border-emerald-500/50'
         }`}
-        title={reminder.is_archived ? "Restore to active nodes" : "Archive to vault"}
+        title={reminder.is_archived ? "Restore Node" : "Archive Node"}
       >
-        {reminder.is_archived ? <RefreshCcw className="w-3.5 h-3.5" /> : <Archive className="w-3.5 h-3.5" />}
+        {reminder.is_archived ? <RefreshCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
       </button>
+
+      {reminder.is_archived && (
+        <div className="absolute top-4 left-16 z-20 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg backdrop-blur-md pointer-events-none">
+           <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
+             <Shield className="w-3 h-3" /> Archived
+           </span>
+        </div>
+      )}
 
       <Link to={`/reminders/${reminder.id}`} className="flex flex-col h-full">
         {/* Visual Header */}
@@ -82,7 +90,7 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
         {/* Content Section */}
         <div className="p-5 flex-1 flex flex-col justify-between overflow-hidden relative">
           <div className="space-y-1.5">
-            <h3 className="text-white text-[13px] font-black leading-tight tracking-tight line-clamp-2 group-hover:text-emerald-400 transition-colors">
+            <h3 className="text-white text-[13px] font-bold leading-tight tracking-tight line-clamp-2 group-hover:text-emerald-400 transition-colors">
               {reminder.title || 'Knowledge Node'}
             </h3>
             <div className="relative max-h-[80px] overflow-hidden">
@@ -97,14 +105,14 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
           <div className="flex items-center justify-between pt-3 border-t border-white/5">
             <div className="flex gap-1.5 overflow-hidden">
               {reminder.tags.length > 0 ? (
-                <span className="text-[7px] font-black uppercase tracking-widest text-emerald-500/40">
+                <span className="text-[7px] font-bold uppercase tracking-widest text-emerald-500/50">
                   #{reminder.tags[0]}
                 </span>
               ) : (
-                <span className="text-[7px] font-black uppercase tracking-widest text-slate-700">Untagged</span>
+                <span className="text-[7px] font-bold uppercase tracking-widest text-slate-700">Untagged</span>
               )}
             </div>
-            {isDue && (
+            {isDue && !reminder.is_archived && (
               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
             )}
             <ChevronRight className="w-3.5 h-3.5 text-slate-700 group-hover:text-emerald-500 transition-colors" />

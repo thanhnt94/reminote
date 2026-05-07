@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Be+Vietnam+Pro:wght@400;500;700;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -15,8 +16,9 @@ body {
   padding: 0;
   min-height: 100vh;
   background-color: #020617;
-  font-family: 'Inter', -apple-system, sans-serif;
+  font-family: 'Inter', 'Be Vietnam Pro', sans-serif;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
 
 /* Tinder Card Perspective */
@@ -45,10 +47,10 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Typography tracking */
-.tracking-tighter { letter-spacing: -0.05em; }
-.tracking-tight { letter-spacing: -0.025em; }
-.tracking-widest { letter-spacing: 0.2em; }
+/* Typography tracking - Toned down for normal reading */
+.tracking-tighter { letter-spacing: -0.02em; }
+.tracking-tight { letter-spacing: -0.01em; }
+.tracking-widest { letter-spacing: 0.1em; }
 
 /* Custom Scrollbar (Obsidian Style) */
 ::-webkit-scrollbar {

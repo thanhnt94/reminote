@@ -57,7 +57,7 @@ export default function DashboardPage() {
       {/* Page Title - Ultra Compact */}
       <div className="px-4 flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h2 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic leading-none">
+          <h2 className="text-xl md:text-2xl font-extrabold text-white tracking-tight uppercase italic leading-none">
             {showArchived ? (
               <>Neural <span className="text-emerald-500 not-italic">Vault</span></>
             ) : (
@@ -66,7 +66,7 @@ export default function DashboardPage() {
           </h2>
           <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 backdrop-blur-xl">
              <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
-             <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tight">
+             <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-tight">
                {data?.pages[0]?.total || 0} Nodes
              </span>
           </div>
@@ -82,7 +82,7 @@ export default function DashboardPage() {
         ) : allReminders.length === 0 ? (
           <div className="col-span-full py-40 text-center opacity-20">
              <Cpu className="w-10 h-10 text-emerald-500 mx-auto mb-4" />
-             <p className="text-[10px] font-black uppercase tracking-widest">Sector Empty</p>
+             <p className="text-[10px] font-bold uppercase tracking-widest">Sector Empty</p>
           </div>
         ) : (
           allReminders.map((r: any) => (
