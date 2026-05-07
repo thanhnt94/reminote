@@ -265,26 +265,28 @@ export default function Layout() {
           </header>
         )}
 
-        <main className={`${isImmersive ? 'flex-1 flex flex-col px-0 py-0 pb-20' : 'px-3 md:px-12 py-3 md:py-8 pb-32 md:pb-12'} max-w-[1920px] mx-auto w-full`}>
+        <main className={`${isImmersive ? 'flex-1 flex flex-col px-0 py-0 overflow-hidden' : 'px-3 md:px-12 py-3 md:py-8 pb-32 md:pb-12'} max-w-[1920px] mx-auto w-full`}>
           <Outlet context={{ search, setSearch, selectedTag, setSelectedTag, showArchived, setShowArchived }} />
         </main>
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0f172a]/95 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-6 z-50">
-        {navItems.map((item) => {
-          const isActive = location.pathname === item.path
-          return (
-            <button
-              key={item.path}
-              onClick={() => navigate(item.path)}
-              className={`p-4 rounded-2xl transition-all ${isActive ? 'text-emerald-500 bg-emerald-500/10' : 'text-slate-500'}`}
-            >
-              <item.icon className="w-6 h-6" />
-            </button>
-          )
-        })}
-      </nav>
+      {!isImmersive && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0f172a]/95 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-6 z-50">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path
+            return (
+              <button
+                key={item.path}
+                onClick={() => navigate(item.path)}
+                className={`p-4 rounded-2xl transition-all ${isActive ? 'text-emerald-500 bg-emerald-500/10' : 'text-slate-500'}`}
+              >
+                <item.icon className="w-6 h-6" />
+              </button>
+            )
+          })}
+        </nav>
+      )}
     </div>
   )
 }
