@@ -147,7 +147,8 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_interaction(db, reminder, action)
         await db.commit()
         
-    status_msg = "✅ Concept understood. Knowledge level increased." if action == "understand" else "🔄 Scheduled for early review."
+    status_msg = "✅ **Mastered!** Neural level increased." if action == "understand" else "🔄 **Review Scheduled.** Node will reappear shortly."
     await query.edit_message_text(
-        text=f"{query.message.text}\n\n---\n{status_msg}\nNext review: {reminder.next_push_at.strftime('%H:%M %d/%m')}"
+        text=f"{query.message.text}\n\n---\n{status_msg}\nNext session: {reminder.next_push_at.strftime('%H:%M %d/%m')}",
+        parse_mode="Markdown"
     )

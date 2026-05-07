@@ -101,45 +101,32 @@ async def check_and_push():
                 if not item:
                     continue
 
-                # 5. Build High-Impact Single Notification
-                prefix = random.choice(MESSAGES)
-                title = item.title or "Untitled Knowledge"
-                content_preview = (item.content_text[:150] + "...") if item.content_text and len(item.content_text) > 150 else (item.content_text or "")
-                
-                msg_text = f"{prefix}\n\n"
-                msg_text += f"🏷️ **{title}**\n"
-                msg_text += f"📝 {content_preview}\n\n"
-                msg_text += f"💡 *Hệ thống sẽ không gửi kiến thức mới cho đến khi bạn xử lý xong Node này.*"
-
-                # 6. Global Flags check
-                tg_enabled_res = await db.execute(select(SystemSetting).where(SystemSetting.key == "ENABLE_TELEGRAM_PUSH"))
-                web_enabled_res = await db.execute(select(SystemSetting).where(SystemSetting.key == "ENABLE_WEB_PUSH"))
-                
-                tg_enabled = (tg_enabled_res.scalar_one_or_none().value or "true").lower() == "true"
-                web_enabled = (web_enabled_res.scalar_one_or_none().value or "true").lower() == "true"
-
-                from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-                keyboard = [[InlineKeyboardButton("🎯 Start Immersive Review", url=f"http://127.0.0.1:5070/review")]]
-                reply_markup = InlineKeyboardMarkup(keyboard)
-
+                # 5. Execute Push
                 from app.services import bot_service
                 try:
                     # Telegram Push
+                    tg_enabled_res = await db.execute(select(SystemSetting).where(SystemSetting.key == "ENABLE_TELEGRAM_PUSH"))
+                    tg_enabled = (tg_enabled_res.scalar_one_or_none().value or "true").lower() == "true"
+
                     if tg_enabled and bot_service.bot and user.telegram_chat_id:
-                        await bot_service.bot.send_message(
-                            chat_id=user.telegram_chat_id, 
-                            text=msg_text, 
-                            reply_markup=reply_markup, 
-                            parse_mode='Markdown'
+                        image_path = item.attachments[0].file_path if item.attachments else None
+                        await bot_service.send_reminder_push(
+                            chat_id=user.telegram_chat_id,
+                            reminder_id=item.id,
+                            title=item.title or "Untitled Node",
+                            content=item.content_text or "",
+                            image_path=image_path
                         )
                     
-                    # Web Push
+                    # Web Push check
+                    web_enabled_res = await db.execute(select(SystemSetting).where(SystemSetting.key == "ENABLE_WEB_PUSH"))
+                    web_enabled = (web_enabled_res.scalar_one_or_none().value or "true").lower() == "true"
                     if web_enabled:
                         from app.services.push_service import broadcast_web_push
                         await broadcast_web_push(user.id, {
-                            "title": f"🧠 Sequential Focus: {title}",
+                            "title": f"🧠 Focus: {item.title or 'New Node'}",
                             "body": "Hãy xử lý Node này để tiếp tục hành trình tri thức.",
-                            "url": "http://127.0.0.1:5070/review"
+                            "url": f"http://127.0.0.1:5070/reminders/{item.id}"
                         })
                     
                     # Update last pushed at

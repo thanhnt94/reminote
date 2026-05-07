@@ -75,26 +75,34 @@ async def init_bot_app():
         logger.error(f"Failed to initialize Telegram Bot: {e}")
         return None
 
-async def send_reminder_push(chat_id: str, reminder_id: int, text: str, image_path: str = None):
+async def send_reminder_push(chat_id: str, reminder_id: int, title: str, content: str, image_path: str = None):
     token = await get_bot_token()
     if not token: return False
     
     base_url = await get_web_base_url()
-    review_url = f"{base_url}/reminders/{reminder_id}"
+    detail_url = f"{base_url}/reminders/{reminder_id}"
         
     bot = Bot(token=token)
     
     keyboard = [
-        [InlineKeyboardButton("📖 Open Research Note", url=review_url)],
         [
-            InlineKeyboardButton("🔄 Review Later", callback_data=f"rem:{reminder_id}:review"),
-            InlineKeyboardButton("✅ Understood", callback_data=f"rem:{reminder_id}:understand"),
-        ]
+            InlineKeyboardButton("🔄 Review", callback_data=f"rem:{reminder_id}:review"),
+            InlineKeyboardButton("✅ Mastered", callback_data=f"rem:{reminder_id}:understand"),
+        ],
+        [InlineKeyboardButton("🌐 View Full Detail", url=detail_url)],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
     try:
-        caption = f"🛡️ **KNOWLEDGE REINFORCEMENT**\n\n{text or 'Visual asset review required.'}"
+        # Sanitize and truncate content for Telegram limits (4096 chars)
+        clean_content = content or "Visual asset review required."
+        if len(clean_content) > 3000:
+            clean_content = clean_content[:3000] + "..."
+            
+        caption = f"🛡️ **NEURAL REINFORCEMENT**\n\n"
+        caption += f"🏷️ **{title}**\n\n"
+        caption += f"{clean_content}"
+        
         if image_path:
             settings = get_settings()
             full_path = os.path.join(settings.STORAGE_DIR, image_path)
