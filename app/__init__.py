@@ -72,7 +72,9 @@ async def seed_defaults():
             for key, value, desc, cat in default_settings:
                 result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
                 existing = result.scalar_one_or_none()
-                if not existing:
+                
+                # Special Case: Generate VAPID keys if they are missing or empty
+                if not existing or not existing.value:
                     val = value
                     if key == "VAPID_PUBLIC_KEY" or key == "VAPID_PRIVATE_KEY":
                         if not vapid_pub:
@@ -82,9 +84,18 @@ async def seed_defaults():
                                 v.generate_keys()
                                 vapid_pub = v.public_key
                                 vapid_priv = v.private_key
-                            except Exception: pass
+                                logger.info("--- [SEED] SUCCESS: Generated new VAPID keys for Web Push ---")
+                            except ImportError:
+                                logger.error("--- [SEED] ERROR: 'pyvapid' library not found. Cannot generate Web Push keys. ---")
+                            except Exception as ex:
+                                logger.error(f"--- [SEED] ERROR: Failed to generate VAPID keys: {ex} ---")
+                        
                         val = vapid_pub if key == "VAPID_PUBLIC_KEY" else vapid_priv
-                    db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
+                    
+                    if not existing:
+                        db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
+                    else:
+                        existing.value = val
 
             await db.commit()
             logger.info("--- [SEED] Ecosystem defaults synchronized successfully. ---")
