@@ -61,11 +61,19 @@ async def login(data: UserLogin, response: Response, db: AsyncSession = Depends(
     result = await db.execute(select(User).where(User.username == data.username))
     user = result.scalar_one_or_none()
 
-    if not user or not user.password_hash:
+    if not user:
+        logger.warning(f"--- [AUTH] LOGIN FAILED: User '{data.username}' not found in database ---")
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    if not user.password_hash:
+        logger.warning(f"--- [AUTH] LOGIN FAILED: User '{data.username}' has no password hash (SSO only?) ---")
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     if not verify_password(data.password, user.password_hash):
+        logger.warning(f"--- [AUTH] LOGIN FAILED: Incorrect password for user '{data.username}' ---")
         raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    logger.info(f"--- [AUTH] LOGIN SUCCESS: User '{data.username}' authenticated successfully ---")
 
     token = create_access_token(user.id, user.username, user.is_admin)
 

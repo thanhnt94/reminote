@@ -26,65 +26,70 @@ logger = logging.getLogger("reminote")
 
 async def seed_defaults():
     """Seed admin user and default system settings on first run."""
-    async with async_session() as db:
-        # 1. Seed admin user
-        result = await db.execute(select(User).where(User.username == "admin"))
-        admin = result.scalar_one_or_none()
-        if not admin:
-            admin = User(
-                username="admin",
-                password_hash=hash_password("admin"),
-                email="admin@reminote.local",
-                is_admin=True,
-            )
-            db.add(admin)
-            logger.info("Created default admin user (admin/admin)")
-
-        # 2. Seed system settings
-        default_settings = [
-            ("TELEGRAM_BOT_TOKEN", "", "Telegram Bot API Token", "bot"),
-            ("TELEGRAM_WEBHOOK_URL", "", "Public webhook URL for Telegram", "bot"),
-            ("TELEGRAM_WEB_BASE_URL", "http://localhost:5070", "Base URL for opening reminders on web", "bot"),
-            ("PUSH_SCHEDULE_HOURS", "8,12,20", "Comma-separated push hours (Old System)", "scheduler"),
-            ("PUSH_TIMEZONE", "Asia/Ho_Chi_Minh", "Timezone for scheduled pushes", "scheduler"),
-            ("MAX_DAILY_PUSHES", "15", "Maximum push notifications per day", "scheduler"),
-            ("GLOBAL_PUSH_INTERVAL", "60", "Global push interval in minutes", "scheduler"),
-            ("GLOBAL_ACTIVE_START", "8", "Global active hour start (0-23)", "scheduler"),
-            ("GLOBAL_ACTIVE_END", "22", "Global active hour end (0-23)", "scheduler"),
-            ("VAPID_PUBLIC_KEY", "", "VAPID Public Key for Web Push", "security"),
-            ("VAPID_PRIVATE_KEY", "", "VAPID Private Key for Web Push", "security"),
-            ("ENABLE_TELEGRAM_PUSH", "true", "Enable system-wide Telegram notifications", "scheduler"),
-            ("ENABLE_WEB_PUSH", "true", "Enable system-wide Chrome notifications", "scheduler"),
-            ("CENTRAL_AUTH_URL", "http://localhost:5000", "CentralAuth Server URL", "sso"),
-            ("CENTRAL_AUTH_CLIENT_ID", "reminote-v1", "SSO Client ID", "sso"),
-            ("CENTRAL_AUTH_CLIENT_SECRET", "reminote_secret_xxx", "SSO Client Secret", "sso"),
-            ("ENABLE_SSO", "true", "Enable CentralAuth SSO Integration", "sso"),
-        ]
-        
-        # Check if we need to generate VAPID keys
-        vapid_pub = ""
-        vapid_priv = ""
-        
-        for key, value, desc, cat in default_settings:
-            result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
-            existing = result.scalar_one_or_none()
+    try:
+        async with async_session() as db:
+            logger.info("--- [SEED] Checking for default ecosystem entities ---")
             
-            if not existing:
-                val = value
-                if key == "VAPID_PUBLIC_KEY" or key == "VAPID_PRIVATE_KEY":
-                    if not vapid_pub:
-                        try:
-                            from pyvapid import Vapid
-                            v = Vapid()
-                            v.generate_keys()
-                            vapid_pub = v.public_key
-                            vapid_priv = v.private_key
-                        except Exception: pass
-                    val = vapid_pub if key == "VAPID_PUBLIC_KEY" else vapid_priv
-                
-                db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
+            # 1. Seed admin user
+            result = await db.execute(select(User).where(User.username == "admin"))
+            admin = result.scalar_one_or_none()
+            if not admin:
+                admin = User(
+                    username="admin",
+                    password_hash=hash_password("admin"),
+                    email="admin@reminote.local",
+                    is_admin=True,
+                )
+                db.add(admin)
+                logger.info("--- [SEED] SUCCESS: Created default admin user (admin/admin) ---")
+            else:
+                logger.info("--- [SEED] INFO: Admin user already exists. Skipping creation. ---")
 
-        await db.commit()
+            # 2. Seed system settings
+            default_settings = [
+                ("TELEGRAM_BOT_TOKEN", "", "Telegram Bot API Token", "bot"),
+                ("TELEGRAM_WEBHOOK_URL", "", "Public webhook URL for Telegram", "bot"),
+                ("TELEGRAM_WEB_BASE_URL", "http://localhost:5070", "Base URL for opening reminders on web", "bot"),
+                ("PUSH_SCHEDULE_HOURS", "8,12,20", "Comma-separated push hours (Old System)", "scheduler"),
+                ("PUSH_TIMEZONE", "Asia/Ho_Chi_Minh", "Timezone for scheduled pushes", "scheduler"),
+                ("MAX_DAILY_PUSHES", "15", "Maximum push notifications per day", "scheduler"),
+                ("GLOBAL_PUSH_INTERVAL", "60", "Global push interval in minutes", "scheduler"),
+                ("GLOBAL_ACTIVE_START", "8", "Global active hour start (0-23)", "scheduler"),
+                ("GLOBAL_ACTIVE_END", "22", "Global active hour end (0-23)", "scheduler"),
+                ("VAPID_PUBLIC_KEY", "", "VAPID Public Key for Web Push", "security"),
+                ("VAPID_PRIVATE_KEY", "", "VAPID Private Key for Web Push", "security"),
+                ("ENABLE_TELEGRAM_PUSH", "true", "Enable system-wide Telegram notifications", "scheduler"),
+                ("ENABLE_WEB_PUSH", "true", "Enable system-wide Chrome notifications", "scheduler"),
+                ("CENTRAL_AUTH_URL", "https://auth.mindstack.click", "CentralAuth Server URL", "sso"),
+                ("CENTRAL_AUTH_CLIENT_ID", "reminote-v1", "SSO Client ID", "sso"),
+                ("CENTRAL_AUTH_CLIENT_SECRET", "reminote_secret_xxx", "SSO Client Secret", "sso"),
+                ("ENABLE_SSO", "true", "Enable CentralAuth SSO Integration", "sso"),
+            ]
+            
+            vapid_pub = ""
+            vapid_priv = ""
+            
+            for key, value, desc, cat in default_settings:
+                result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
+                existing = result.scalar_one_or_none()
+                if not existing:
+                    val = value
+                    if key == "VAPID_PUBLIC_KEY" or key == "VAPID_PRIVATE_KEY":
+                        if not vapid_pub:
+                            try:
+                                from pyvapid import Vapid
+                                v = Vapid()
+                                v.generate_keys()
+                                vapid_pub = v.public_key
+                                vapid_priv = v.private_key
+                            except Exception: pass
+                        val = vapid_pub if key == "VAPID_PUBLIC_KEY" else vapid_priv
+                    db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
+
+            await db.commit()
+            logger.info("--- [SEED] Ecosystem defaults synchronized successfully. ---")
+    except Exception as e:
+        logger.error(f"--- [SEED] CRITICAL ERROR: Ecosystem seeding failed: {e} ---")
 
 
 @asynccontextmanager
@@ -100,7 +105,7 @@ async def lifespan(app: FastAPI):
         
         # 2. Run migrations (This handles table creation properly)
         try:
-            run_auto_migrations()
+            await run_auto_migrations()
         except Exception as e:
             logger.error(f"Migration failed: {e}")
             # In production, we might want to exit here, but we'll try to seed anyway
