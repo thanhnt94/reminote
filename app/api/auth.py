@@ -312,7 +312,14 @@ async def get_vapid_public_key(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(SystemSetting).where(SystemSetting.key == "VAPID_PUBLIC_KEY"))
     setting = result.scalar_one_or_none()
     if not setting or not setting.value:
-        raise HTTPException(status_code=503, detail="Web push not configured")
+        # Check if pyvapid is even installed
+        try:
+            import pyvapid
+            msg = "Web push keys are missing. Please restart the server to trigger auto-generation."
+        except ImportError:
+            msg = "Web push is not configured: 'py-vapid' library is missing from the environment."
+        
+        raise HTTPException(status_code=503, detail=msg)
     return {"publicKey": setting.value}
 
 @router.post("/profile/web-push")

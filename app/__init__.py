@@ -69,38 +69,41 @@ async def seed_defaults():
             vapid_pub = ""
             vapid_priv = ""
             
+            # Pre-check: Ensure VAPID keys exist
+            for key_name in ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"]:
+                res = await db.execute(select(SystemSetting).where(SystemSetting.key == key_name))
+                existing = res.scalar_one_or_none()
+                if not existing or not existing.value:
+                    if not vapid_pub:
+                        try:
+                            from pyvapid import Vapid
+                            v = Vapid()
+                            v.generate_keys()
+                            vapid_pub = v.public_key
+                            vapid_priv = v.private_key
+                            logger.info("--- [SEED] SUCCESS: Generated new VAPID keys ---")
+                        except Exception as ex:
+                            logger.error(f"--- [SEED] WARNING: Could not generate VAPID keys: {ex}")
+                    
+                    val = vapid_pub if key_name == "VAPID_PUBLIC_KEY" else vapid_priv
+                    if val: # Only save if we actually got a key
+                        if not existing:
+                            db.add(SystemSetting(key=key_name, value=val, description="VAPID Key", category="security"))
+                        else:
+                            existing.value = val
+
+            # Seed other defaults
             for key, value, desc, cat in default_settings:
+                if key in ["VAPID_PUBLIC_KEY", "VAPID_PRIVATE_KEY"]: continue
                 result = await db.execute(select(SystemSetting).where(SystemSetting.key == key))
                 existing = result.scalar_one_or_none()
-                
-                # Special Case: Generate VAPID keys if they are missing or empty
-                if not existing or not existing.value:
-                    val = value
-                    if key == "VAPID_PUBLIC_KEY" or key == "VAPID_PRIVATE_KEY":
-                        if not vapid_pub:
-                            try:
-                                from pyvapid import Vapid
-                                v = Vapid()
-                                v.generate_keys()
-                                vapid_pub = v.public_key
-                                vapid_priv = v.private_key
-                                logger.info("--- [SEED] SUCCESS: Generated new VAPID keys for Web Push ---")
-                            except ImportError:
-                                logger.error("--- [SEED] ERROR: 'pyvapid' library not found. Cannot generate Web Push keys. ---")
-                            except Exception as ex:
-                                logger.error(f"--- [SEED] ERROR: Failed to generate VAPID keys: {ex} ---")
-                        
-                        val = vapid_pub if key == "VAPID_PUBLIC_KEY" else vapid_priv
-                    
-                    if not existing:
-                        db.add(SystemSetting(key=key, value=val, description=desc, category=cat))
-                    else:
-                        existing.value = val
+                if not existing:
+                    db.add(SystemSetting(key=key, value=value, description=desc, category=cat))
 
             await db.commit()
-            logger.info("--- [SEED] Ecosystem defaults synchronized successfully. ---")
+            logger.info("--- [SEED] Ecosystem defaults synchronized. ---")
     except Exception as e:
-        logger.error(f"--- [SEED] CRITICAL ERROR: Ecosystem seeding failed: {e} ---")
+        logger.error(f"--- [SEED] CRITICAL ERROR: {e} ---")
 
 
 @asynccontextmanager
