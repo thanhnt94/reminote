@@ -307,19 +307,33 @@ async def backchannel_logout(request: Request, db: AsyncSession = Depends(get_db
 
 @router.get("/vapid-public-key")
 async def get_vapid_public_key(db: AsyncSession = Depends(get_db)):
-    """Provide the VAPID public key for the frontend."""
+    """Provide the VAPID public key for the frontend with on-the-fly generation."""
     from app.models.setting import SystemSetting
     result = await db.execute(select(SystemSetting).where(SystemSetting.key == "VAPID_PUBLIC_KEY"))
     setting = result.scalar_one_or_none()
+    
     if not setting or not setting.value:
-        # Check if pyvapid is even installed
         try:
-            import pyvapid
-            msg = "Web push keys are missing. Please restart the server to trigger auto-generation."
+            from pyvapid import Vapid
+            v = Vapid()
+            v.generate_keys()
+            
+            # Save both keys
+            for k, v_val in [("VAPID_PUBLIC_KEY", v.public_key), ("VAPID_PRIVATE_KEY", v.private_key)]:
+                res = await db.execute(select(SystemSetting).where(SystemSetting.key == k))
+                s = res.scalar_one_or_none()
+                if not s:
+                    db.add(SystemSetting(key=k, value=v_val, description="Auto-generated VAPID Key", category="security"))
+                else:
+                    s.value = v_val
+            
+            await db.commit()
+            return {"publicKey": v.public_key}
         except ImportError:
-            msg = "Web push is not configured: 'py-vapid' library is missing from the environment."
-        
-        raise HTTPException(status_code=503, detail=msg)
+            raise HTTPException(status_code=503, detail="Web push not configured: 'py-vapid' library missing.")
+        except Exception as e:
+            raise HTTPException(status_code=503, detail=f"Failed to generate keys on-the-fly: {e}")
+            
     return {"publicKey": setting.value}
 
 @router.post("/profile/web-push")
