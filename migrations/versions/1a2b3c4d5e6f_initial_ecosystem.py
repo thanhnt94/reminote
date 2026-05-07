@@ -25,13 +25,16 @@ def upgrade():
         sa.Column('is_admin', sa.Boolean(), default=False),
         sa.Column('sso_user_id', sa.Integer(), nullable=True),
         sa.Column('telegram_chat_id', sa.String(length=50), nullable=True),
+        sa.Column('telegram_link_code', sa.String(length=10), nullable=True),
         sa.Column('push_interval_minutes', sa.Integer(), default=60),
         sa.Column('quiet_hour_start', sa.Integer(), default=22),
         sa.Column('quiet_hour_end', sa.Integer(), default=8),
+        sa.Column('last_pushed_at', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('username'),
-        sa.UniqueConstraint('sso_user_id')
+        sa.UniqueConstraint('sso_user_id'),
+        sa.UniqueConstraint('telegram_link_code')
     )
 
     # 2. Create tags table
