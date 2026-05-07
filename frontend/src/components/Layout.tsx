@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   LayoutDashboard, PlusSquare, GraduationCap, 
-  Settings, Tags, LogOut, Bell, Search, 
-  Brain, Zap, ChevronRight, User as UserIcon, X, Tag as TagIcon,
-  SlidersHorizontal, LayoutGrid, Eye, Filter, ArrowRight
+  Settings, Tags, LogOut, Search, 
+  Brain, User as UserIcon, X, Tag as TagIcon,
+  SlidersHorizontal, Filter, ArrowRight, Zap
 } from 'lucide-react'
 import { useAuthStore } from '@/stores/useAuthStore'
 import api from '@/api/client'
@@ -20,7 +20,6 @@ export default function Layout() {
   const [selectedTag, setSelectedTag] = useState('')
   const [showArchived, setShowArchived] = useState(false)
   
-  // Quick Tag Selector State
   const [showTagSelector, setShowTagSelector] = useState(false)
   const [tagSearch, setTagSearch] = useState('')
   const tagInputRef = useRef<HTMLInputElement>(null)
@@ -32,7 +31,7 @@ export default function Layout() {
 
   const filteredTags = tagsData?.filter((t: any) => 
     t.name.toLowerCase().includes(tagSearch.toLowerCase())
-  ).slice(0, 100) // Show first 100 matches for performance
+  ).slice(0, 100)
 
   useEffect(() => {
     if (showTagSelector && tagInputRef.current) {
@@ -154,19 +153,19 @@ export default function Layout() {
         
         {/* GLOBAL UNIFIED HEADER */}
         <header className="sticky top-0 z-[100] bg-[#020617]/90 backdrop-blur-3xl border-b border-white/5">
-           <div className="px-4 md:px-12 py-5 flex items-center justify-between gap-6">
+           <div className="px-4 md:px-12 py-2 flex items-center justify-between gap-4">
               <div 
                 onClick={() => navigate('/dashboard')}
                 className="flex items-center cursor-pointer group"
               >
                  <div className="p-2.5 bg-emerald-500 rounded-2xl shadow-[0_0_25px_rgba(16,185,129,0.4)] group-hover:rotate-12 transition-transform">
-                    <Brain className="w-6 h-6 text-black" />
+                    <Brain className="w-5 h-5 text-black" />
                  </div>
-                 <h1 className="text-2xl font-black text-white tracking-tighter uppercase hidden lg:block italic ml-3">Remi<span className="text-emerald-500 not-italic">Note</span></h1>
+                 <h1 className="text-xl font-black text-white tracking-tighter uppercase hidden lg:block italic ml-3">Remi<span className="text-emerald-500 not-italic">Note</span></h1>
               </div>
 
               <div className="flex-1 max-w-3xl relative group">
-                 <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
+                 <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-600 group-focus-within:text-emerald-500 transition-colors" />
                  <input 
                    type="text" 
                    value={search}
@@ -175,7 +174,7 @@ export default function Layout() {
                       if (location.pathname !== '/dashboard') navigate('/dashboard')
                    }}
                    placeholder="Scan neural patterns..."
-                   className="w-full bg-white/[0.03] border border-white/5 rounded-[1.5rem] py-4 pl-16 pr-12 text-sm font-bold text-slate-300 focus:outline-none focus:border-emerald-500/20 focus:bg-white/[0.05] transition-all"
+                   className="w-full bg-white/[0.03] border border-white/5 rounded-xl py-3 pl-14 pr-10 text-xs font-bold text-slate-300 focus:outline-none focus:border-emerald-500/20 focus:bg-white/[0.05] transition-all"
                  />
                  {search && (
                     <button onClick={() => setSearch('')} className="absolute right-5 top-1/2 -translate-y-1/2 p-1.5 text-slate-600 hover:text-white transition-colors">
@@ -192,17 +191,16 @@ export default function Layout() {
            </div>
 
            {/* BOTTOM ROW: TAXONOMY STRIP */}
-           <div className="px-4 md:px-12 py-2 flex items-center gap-2 overflow-hidden border-t border-white/[0.03] bg-black/10">
+           <div className="px-4 md:px-12 py-0.5 flex items-center gap-2 overflow-hidden border-t border-white/[0.03] bg-black/10">
               
-              {/* THE NEURAL QUICK-SELECTOR BUTTON (Sliders) */}
               <button 
                 onClick={() => setShowTagSelector(true)}
-                className="p-3.5 bg-white/5 border border-white/10 rounded-xl text-emerald-500 hover:bg-emerald-500/10 transition-all active:scale-95 group mr-2 shadow-xl shadow-emerald-500/5"
+                className="p-2 bg-white/5 border border-white/10 rounded-xl text-emerald-500 hover:bg-emerald-500/10 transition-all active:scale-95 group mr-2 shadow-xl shadow-emerald-500/5"
               >
-                 <SlidersHorizontal className="w-5 h-5 group-hover:rotate-90 transition-transform" />
+                 <SlidersHorizontal className="w-4 h-4 group-hover:rotate-90 transition-transform" />
               </button>
               
-              <div className="flex-1 flex items-center gap-3 overflow-x-auto no-scrollbar py-3">
+              <div className="flex-1 flex items-center gap-2 overflow-x-auto no-scrollbar py-2">
                  <button 
                    onClick={() => setSelectedTag('')}
                    className={`px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${!selectedTag ? 'bg-emerald-500 text-black border-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.3)]' : 'bg-white/5 text-slate-600 border-white/5 hover:text-slate-300'}`}
@@ -222,13 +220,13 @@ export default function Layout() {
                   </button>
                ))}
                
-                 <button 
-                   onClick={() => navigate('/tags')}
-                   className="px-6 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:bg-emerald-500 hover:text-black transition-all flex items-center gap-3 whitespace-nowrap shadow-lg group ml-auto"
-                 >
-                    <Filter className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
-                    Taxonomy Engine
-                 </button>
+                  <button 
+                    onClick={() => navigate('/tags')}
+                    className="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-500 hover:bg-emerald-500 hover:text-black transition-all flex items-center justify-center whitespace-nowrap shadow-lg group ml-auto"
+                  >
+                     <Filter className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                     <span className="hidden sm:inline text-[9px] font-black uppercase tracking-widest ml-2">Taxonomy</span>
+                  </button>
               </div>
 
               <div className="pl-6 border-l border-white/10 hidden lg:flex items-center gap-4">
@@ -242,7 +240,7 @@ export default function Layout() {
            </div>
         </header>
 
-        <main className="px-6 md:px-12 py-8 md:py-12 pb-32 md:pb-12 max-w-[1920px] mx-auto w-full">
+        <main className="px-3 md:px-12 py-3 md:py-8 pb-32 md:pb-12 max-w-[1920px] mx-auto w-full">
           <Outlet context={{ search, setSearch, selectedTag, setSelectedTag, showArchived, setShowArchived }} />
         </main>
       </div>

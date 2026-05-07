@@ -53,24 +53,23 @@ export default function DashboardPage() {
   const allReminders = data?.pages.flatMap(page => page.items) || []
 
   return (
-    <div className="animate-fade-in space-y-8">
-      {/* Page Title - High Contrast */}
-      <div className="px-4 flex items-end justify-between mb-8">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Knowledge Repository</p>
-          <h2 className="text-4xl lg:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
+    <div className="animate-fade-in space-y-4">
+      {/* Page Title - Ultra Compact */}
+      <div className="px-4 flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl md:text-2xl font-black text-white tracking-tighter uppercase italic leading-none">
             {showArchived ? (
               <>Neural <span className="text-emerald-500 not-italic">Vault</span></>
             ) : (
               <>Active <span className="text-emerald-500 not-italic">Feed</span></>
             )}
           </h2>
-        </div>
-        <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl px-6 py-3 backdrop-blur-xl">
-           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-             {allReminders.length} Active Nodes
-           </span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-3 py-1 backdrop-blur-xl">
+             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+             <span className="text-[9px] font-black text-emerald-500 uppercase tracking-tight">
+               {data?.pages[0]?.total || 0} Nodes
+             </span>
+          </div>
         </div>
       </div>
 
