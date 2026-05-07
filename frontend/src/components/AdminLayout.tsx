@@ -1,6 +1,6 @@
 import { Outlet, NavLink } from 'react-router-dom'
 import { BarChart3, ArrowLeft, Layers, ShieldCheck, Key, MessageSquare, Globe } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminLayout() {
   const navItems = [
