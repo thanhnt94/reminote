@@ -157,13 +157,42 @@ export default function SettingsPage() {
                     <LinkIcon className="w-4 h-4 text-emerald-400" />
                     <h4 className="text-[11px] font-black uppercase tracking-widest text-emerald-400">Telegram Link</h4>
                   </div>
-                  {!user?.telegram_chat_id ? (
+                  {user?.telegram_chat_id ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between p-4 bg-black/20 rounded-2xl border border-emerald-500/10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-emerald-500/10 rounded-full flex items-center justify-center">
+                            <Bot className="w-4 h-4 text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Linked Identity</p>
+                            <p className="text-xs font-bold text-emerald-400">@{user.telegram_username || 'linked_user'}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-emerald-500/80">
+                          <Check className="w-3.5 h-3.5" />
+                        </div>
+                      </div>
+                      
+                      <button 
+                        onClick={async () => {
+                          if (confirm('Unlink this Telegram account? You will stop receiving reinforcement digests.')) {
+                            await api.post('/api/auth/profile/unlink-telegram')
+                            fetchMe()
+                          }
+                        }}
+                        className="w-full py-2.5 bg-white/5 text-slate-500 hover:text-red-400 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all"
+                      >
+                        Unlink Account
+                      </button>
+                    </div>
+                  ) : (
                     <div className="space-y-3">
                       <div className="relative">
                         <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                         <input 
                           type="text" 
-                          placeholder="@username"
+                          placeholder="@your_telegram_name"
                           value={tgUsername}
                           onChange={(e) => setTgUsername(e.target.value)}
                           className="w-full pl-10 pr-4 py-3 bg-black/40 border border-white/5 rounded-2xl text-[11px] font-bold text-white focus:border-emerald-500/30 outline-none transition-all placeholder:text-slate-700"
@@ -174,13 +203,11 @@ export default function SettingsPage() {
                         disabled={linkMutation.isPending || !tgUsername}
                         className="w-full py-3 bg-emerald-500 text-[#020617] rounded-xl text-[9px] font-black uppercase tracking-widest hover:scale-[1.01] transition-all disabled:opacity-30"
                       >
-                        {linkMutation.isPending ? 'Syncing...' : 'Connect'}
+                        {linkMutation.isPending ? 'Syncing...' : 'Connect Identity'}
                       </button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2 text-emerald-500/80">
-                      <Check className="w-4 h-4" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Active Connection</span>
+                      {linkError && (
+                        <p className="text-[9px] font-bold text-red-500 text-center px-2">{linkError}</p>
+                      )}
                     </div>
                   )}
               </div>

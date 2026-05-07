@@ -95,9 +95,30 @@ async def login(data: UserLogin, response: Response, db: AsyncSession = Depends(
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_me(user: User = Depends(get_current_user)):
-    """Get current authenticated user info."""
-    return UserResponse.model_validate(user)
+async def get_me(user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """Get current authenticated user info with linked telegram handle."""
+    # Find linked telegram username
+    tg_username = None
+    if user.telegram_chat_id:
+        from app.models.user import TelegramConnection
+        res = await db.execute(select(TelegramConnection.username).where(TelegramConnection.chat_id == user.telegram_chat_id))
+        tg_username = res.scalar_one_or_none()
+    
+    # We create a dict to inject the extra field before validation
+    user_data = UserResponse.model_validate(user).model_dump()
+    user_data["telegram_username"] = tg_username
+    return UserResponse(**user_data)
+
+
+@router.post("/profile/unlink-telegram")
+async def unlink_telegram(
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Disconnect Telegram account."""
+    user.telegram_chat_id = None
+    await db.commit()
+    return {"status": "success"}
 
 
 @router.post("/logout")
@@ -148,7 +169,6 @@ async def link_telegram_username(
     await db.commit()
     
     return {"status": "success", "chat_id": conn.chat_id}
-    return redirect
 
 # --- Standardized SSO Protocol (Mindstack Ecosystem) ---
 

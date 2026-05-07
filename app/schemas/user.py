@@ -15,6 +15,10 @@ class UserResponse(BaseModel):
     email: str | None = None
     is_admin: bool
     telegram_chat_id: str | None = None
+    telegram_username: str | None = None
+    push_interval_minutes: int = 60
+    quiet_hour_start: int = 23
+    quiet_hour_end: int = 7
     created_at: datetime
 
     model_config = {"from_attributes": True}

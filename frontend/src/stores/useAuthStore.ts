@@ -7,6 +7,7 @@ interface User {
   email: string | null
   is_admin: boolean
   telegram_chat_id: string | null
+  telegram_username: string | null
   push_interval_minutes: number
   quiet_hour_start: number
   quiet_hour_end: number
