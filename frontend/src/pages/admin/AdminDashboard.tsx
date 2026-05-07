@@ -23,16 +23,39 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div>
-      <h1 className="text-2xl font-bold text-white mb-6">Admin Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-20">
+      <div className="mb-10">
+        <p className="text-[10px] font-black text-slate-600 uppercase tracking-[0.4em] mb-1">Intelligence</p>
+        <h1 className="text-3xl font-black text-white uppercase italic tracking-tighter">Admin <span className="text-emerald-500 not-italic">Dashboard</span></h1>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         {cards.map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className={`rounded-xl p-5 bg-gradient-to-br border ${colorMap[color]}`}>
-            <Icon className="w-8 h-8 mb-3 opacity-80" />
-            <p className="text-3xl font-bold">{value}</p>
-            <p className="text-sm opacity-60 mt-1">{label}</p>
+          <div key={label} className={`group relative rounded-2xl lg:rounded-[2.5rem] p-6 lg:p-8 bg-gradient-to-br border transition-all hover:scale-[1.02] ${colorMap[color]}`}>
+            <div className="flex items-center justify-between mb-8 lg:mb-12">
+               <div className="p-3 lg:p-4 bg-white/10 rounded-xl lg:rounded-2xl border border-white/10 group-hover:bg-white/20 transition-all">
+                  <Icon className="w-6 h-6 lg:w-8 lg:h-8" />
+               </div>
+               <div className="w-2 h-2 rounded-full bg-current animate-pulse opacity-40" />
+            </div>
+            
+            <div className="space-y-1">
+               <p className="text-4xl lg:text-5xl font-black tabular-nums tracking-tighter">{value}</p>
+               <p className="text-[10px] lg:text-xs font-black uppercase tracking-widest opacity-60 group-hover:opacity-100 transition-opacity">{label}</p>
+            </div>
+            
+            {/* Decorative background element */}
+            <div className="absolute bottom-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity overflow-hidden pointer-events-none">
+               <Icon className="w-32 h-32 translate-x-8 translate-y-8" />
+            </div>
           </div>
         ))}
+      </div>
+
+      {/* Placeholder for future charts */}
+      <div className="mt-10 p-10 bg-white/[0.02] border border-white/5 rounded-[3rem] border-dashed flex flex-col items-center justify-center gap-4 text-slate-700 min-h-[300px]">
+         <BarChart3 className="w-12 h-12 opacity-20" />
+         <p className="text-[10px] font-black uppercase tracking-[0.3em]">Real-time Telemetry Offline</p>
       </div>
     </div>
   )

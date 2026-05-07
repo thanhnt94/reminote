@@ -35,41 +35,41 @@ export default function WebPushSettings() {
           {/* Master Toggle */}
           <div 
             onClick={() => updateMutation.mutate({ key: 'ENABLE_WEB_PUSH', value: isEnabled ? 'false' : 'true' })}
-            className={`w-full md:w-80 p-10 rounded-[3rem] border cursor-pointer transition-all flex flex-col justify-between group h-64 ${isEnabled ? 'bg-blue-500/5 border-blue-500/20' : 'bg-white/5 border-white/5 opacity-50'}`}
+            className={`w-full lg:w-80 p-6 lg:p-10 rounded-2xl lg:rounded-[3rem] border cursor-pointer transition-all flex flex-col justify-between group lg:h-64 ${isEnabled ? 'bg-blue-500/5 border-blue-500/20' : 'bg-white/5 border-white/5 opacity-50'}`}
           >
-             <div className="flex items-center justify-between">
-                <div className={`p-6 rounded-3xl ${isEnabled ? 'bg-blue-500 text-black shadow-xl shadow-blue-500/30' : 'bg-slate-800 text-slate-500'}`}>
-                   <Globe className="w-10 h-10" />
+             <div className="flex items-center justify-between mb-8 lg:mb-0">
+                <div className={`p-4 lg:p-6 rounded-2xl lg:rounded-3xl ${isEnabled ? 'bg-blue-500 text-black shadow-xl shadow-blue-500/30' : 'bg-slate-800 text-slate-500'}`}>
+                   <Globe className="w-6 h-6 lg:w-10 lg:h-10" />
                 </div>
-                <div className={`w-14 h-7 rounded-full p-1 transition-colors ${isEnabled ? 'bg-blue-500' : 'bg-slate-700'}`}>
-                   <div className={`w-5 h-5 rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-7' : 'translate-x-0'}`} />
+                <div className={`w-12 lg:w-14 h-6 lg:h-7 rounded-full p-1 transition-colors ${isEnabled ? 'bg-blue-500' : 'bg-slate-700'}`}>
+                   <div className={`w-4 lg:w-5 h-4 lg:h-5 rounded-full bg-white transition-transform ${isEnabled ? 'translate-x-6 lg:translate-x-7' : 'translate-x-0'}`} />
                 </div>
              </div>
              <div className="space-y-2">
-                <h3 className="text-3xl font-black text-white uppercase tracking-tighter italic">Web App Push</h3>
+                <h3 className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tighter italic">Web App Push</h3>
                 <p className="text-[10px] text-slate-500 font-bold uppercase tracking-[0.2em]">{isEnabled ? 'Protocol Active' : 'Protocol Silenced'}</p>
              </div>
           </div>
 
           {/* Info Card */}
-          <div className="flex-1 bg-[#0f172a] border border-white/5 rounded-[3rem] p-10 flex flex-col justify-center h-64">
-             <div className="flex items-center gap-6">
-                <div className="p-6 bg-blue-500/10 rounded-[2rem] border border-blue-500/20">
-                   <ShieldCheck className="w-10 h-10 text-blue-500" />
+          <div className="flex-1 bg-white/[0.02] border border-white/5 rounded-2xl lg:rounded-[3rem] p-6 lg:p-10 flex flex-col justify-center lg:h-64">
+             <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="p-4 lg:p-6 bg-blue-500/10 rounded-2xl lg:rounded-[2rem] border border-blue-500/20">
+                   <ShieldCheck className="w-6 h-6 lg:w-10 lg:h-10 text-blue-500" />
                 </div>
-                <div className="space-y-2">
-                   <h3 className="text-2xl font-black text-white uppercase">VAPID Security Layer</h3>
-                   <p className="text-xs text-slate-500 max-w-md font-medium leading-relaxed">Web App Push relies on the Voluntary Application Server Identification (VAPID) protocol to securely communicate with browser push services.</p>
+                <div className="space-y-2 text-center sm:text-left">
+                   <h3 className="text-xl lg:text-2xl font-black text-white uppercase">VAPID Security Layer</h3>
+                   <p className="text-[11px] lg:text-xs text-slate-500 max-w-md font-medium leading-relaxed">Web App Push relies on the Voluntary Application Server Identification (VAPID) protocol to securely communicate with browser push services.</p>
                 </div>
              </div>
           </div>
        </div>
 
        {/* VAPID Credentials */}
-       <div className="bg-[#0f172a] border border-white/5 rounded-[3rem] p-10">
-          <div className="flex items-center gap-3 mb-8">
-             <Terminal className="w-5 h-5 text-blue-500" />
-             <h3 className="text-lg font-black text-white uppercase tracking-tight">Security Credentials</h3>
+       <div className="bg-white/[0.02] border border-white/5 rounded-2xl lg:rounded-[3rem] p-6 lg:p-10">
+          <div className="flex items-center gap-3 mb-6 lg:mb-8">
+             <Terminal className="w-4 h-4 lg:w-5 lg:h-5 text-blue-500" />
+             <h3 className="text-base lg:text-lg font-black text-white uppercase tracking-tight">Security Credentials</h3>
           </div>
           <div className="grid grid-cols-1 gap-6">
              {settings?.filter((s: any) => s.category === 'security').map((s: any) => (
