@@ -180,3 +180,37 @@ async def get_stats(db: AsyncSession):
         "total_tags": total_tags,
         "due_now": due_now
     }
+
+async def search_similar_titles(db: AsyncSession, user_id: int, title: str, limit: int = 5) -> List[Reminder]:
+    """Search for existing reminders with similar titles to prevent duplication."""
+    if not title or len(title) < 3: return []
+    query = (
+        select(Reminder)
+        .where(Reminder.user_id == user_id)
+        .where(Reminder.title.ilike(f"%{title}%"))
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+async def get_tag_suggestions(db: AsyncSession, user_id: int, prefix: str, limit: int = 10) -> List[str]:
+    """Suggest existing tags based on a prefix."""
+    prefix = prefix.lower().lstrip('#')
+    if not prefix:
+        # Return most popular tags
+        query = (
+            select(Tag.name)
+            .join(Reminder.tags_rel)
+            .where(Reminder.user_id == user_id)
+            .group_by(Tag.name)
+            .order_by(desc(func.count(Reminder.id)))
+            .limit(limit)
+        )
+    else:
+        query = (
+            select(Tag.name)
+            .where(Tag.name.ilike(f"{prefix}%"))
+            .limit(limit)
+        )
+    result = await db.execute(query)
+    return list(result.scalars().all())

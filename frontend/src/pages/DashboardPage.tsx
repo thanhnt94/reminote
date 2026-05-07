@@ -53,22 +53,29 @@ export default function DashboardPage() {
   const allReminders = data?.pages.flatMap(page => page.items) || []
 
   return (
-    <div className="animate-fade-in max-w-2xl mx-auto space-y-4">
-      {/* Page Title - Minimalist */}
-      <div className="px-1 flex items-center justify-between">
-        <h2 className="text-xl font-black text-white tracking-tighter opacity-80">
-          {showArchived ? 'Knowledge Vault' : 'Neural Feed'}
-        </h2>
-        <div className="flex items-center gap-2">
-           <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-           <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">
+    <div className="animate-fade-in space-y-8">
+      {/* Page Title - High Contrast */}
+      <div className="px-4 flex items-end justify-between mb-8">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Knowledge Repository</p>
+          <h2 className="text-4xl lg:text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
+            {showArchived ? (
+              <>Neural <span className="text-emerald-500 not-italic">Vault</span></>
+            ) : (
+              <>Active <span className="text-emerald-500 not-italic">Feed</span></>
+            )}
+          </h2>
+        </div>
+        <div className="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl px-6 py-3 backdrop-blur-xl">
+           <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+           <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
              {allReminders.length} Active Nodes
            </span>
         </div>
       </div>
 
-      {/* Grid - Starts immediately */}
-      <div className="grid grid-cols-2 gap-3 md:gap-4">
+      {/* Responsive Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6 md:gap-8">
         {isLoading && allReminders.length === 0 ? (
           [1, 2, 3, 4, 5, 6].map(i => (
             <div key={i} className="h-[270px] bg-white/5 rounded-[2.5rem] border border-white/5 animate-pulse" />

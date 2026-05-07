@@ -55,7 +55,7 @@ async def require_admin(user: User = Depends(get_current_user)) -> User:
 
 
 # --- Internal Login ---
-@router.post("/api/auth/login", response_model=TokenResponse)
+@router.post("/login", response_model=TokenResponse)
 async def login(data: UserLogin, response: Response, db: AsyncSession = Depends(get_db)):
     """Internal username/password login."""
     result = await db.execute(select(User).where(User.username == data.username))
@@ -84,20 +84,20 @@ async def login(data: UserLogin, response: Response, db: AsyncSession = Depends(
     )
 
 
-@router.get("/api/auth/me", response_model=UserResponse)
+@router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)):
     """Get current authenticated user info."""
     return UserResponse.model_validate(user)
 
 
-@router.post("/api/auth/logout")
+@router.post("/logout")
 async def logout(response: Response):
     """Clear auth cookie."""
     response.delete_cookie("access_token")
     return {"message": "Logged out"}
 
 
-@router.put("/api/auth/profile/settings")
+@router.put("/profile/settings")
 async def update_settings(
     data: dict,
     user: User = Depends(get_current_user),
@@ -115,7 +115,7 @@ async def update_settings(
     return {"status": "success"}
 
 
-@router.post("/api/auth/profile/link-telegram")
+@router.post("/profile/link-telegram")
 async def link_telegram_username(
     data: dict,
     user: User = Depends(get_current_user),
@@ -275,7 +275,7 @@ async def backchannel_logout(request: Request, db: AsyncSession = Depends(get_db
     print(f"[SSO] Backchannel logout request for SSO User ID: {sso_user_id}")
     return {"status": "success"}
 
-@router.get("/api/auth/vapid-public-key")
+@router.get("/vapid-public-key")
 async def get_vapid_public_key(db: AsyncSession = Depends(get_db)):
     """Provide the VAPID public key for the frontend."""
     from app.models.setting import SystemSetting
@@ -285,7 +285,7 @@ async def get_vapid_public_key(db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=503, detail="Web push not configured")
     return {"publicKey": setting.value}
 
-@router.post("/api/auth/profile/web-push")
+@router.post("/profile/web-push")
 async def register_web_push(
     data: dict,
     user: User = Depends(get_current_user),

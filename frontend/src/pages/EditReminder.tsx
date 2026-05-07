@@ -1,49 +1,68 @@
 import { useState, useRef, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useParams, Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Upload, X, Send, Tag, Check, Brain, Sparkles, 
+  Save, X, Send, Tag, Check, Brain, Sparkles, 
   BookOpen, FileText, Image as ImageIcon, Loader2,
   Zap, Info, Plus, Trash2, Bold, Italic, Code, Link as LinkIcon, Heading, List,
-  AlertCircle, Search, ArrowRight, Save
+  AlertCircle, Search, ArrowRight
 } from 'lucide-react'
 import api from '@/api/client'
 
-export default function NewReminder() {
+export default function EditReminder() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const qc = useQueryClient()
+  const fileRef = useRef<HTMLInputElement>(null)
+  const textAreaRef = useRef<HTMLTextAreaElement>(null)
+
   const [title, setTitle] = useState('')
   const [text, setText] = useState('')
   const [tags, setTags] = useState('')
   const [isPasting, setIsPasting] = useState(false)
-  const [pastedFiles, setPastedFiles] = useState<{url: string, filename: string}[]>([])
+  const [pastedFiles, setPastedFiles] = useState<{url: string, filename: string, id?: number}[]>([])
   
   const [similarNotes, setSimilarNotes] = useState<any[]>([])
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   const [showTagSuggestions, setShowTagSuggestions] = useState(false)
 
-  const fileRef = useRef<HTMLInputElement>(null)
-  const textAreaRef = useRef<HTMLTextAreaElement>(null)
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
+  const { data: r, isLoading } = useQuery({
+    queryKey: ['reminders', id],
+    queryFn: async () => (await api.get(`/api/reminders/${id}`)).data,
+  })
 
-  const { data: existingTags } = useQuery({
+  const { data: allTags } = useQuery({
     queryKey: ['tags'],
     queryFn: async () => (await api.get('/api/reminders/tags')).data,
   })
+
+  useEffect(() => {
+    if (r) {
+      setTitle(r.title || '')
+      setText(r.content_text || '')
+      setTags(r.tags?.map((t: string) => `#${t}`).join(' ') || '')
+      setPastedFiles(r.attachments.map((a: any) => ({
+         url: `/api/attachments/${a.id}/file`,
+         filename: a.file_path,
+         id: a.id
+      })))
+    }
+  }, [r])
 
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (title.length >= 3) {
         try {
           const { data } = await api.get(`/api/reminders/search/similar-titles?q=${encodeURIComponent(title)}`)
-          setSimilarNotes(data)
+          setSimilarNotes(data.filter((n: any) => n.id !== Number(id)))
         } catch (e) { console.error(e) }
       } else {
         setSimilarNotes([])
       }
     }, 500)
     return () => clearTimeout(timer)
-  }, [title])
+  }, [title, id])
 
   useEffect(() => {
     const lastWord = tags.split(/[\s,]+/).pop() || ''
@@ -70,24 +89,23 @@ export default function NewReminder() {
     setShowTagSuggestions(false)
   }
 
-  const createMutation = useMutation({
+  const updateMutation = useMutation({
     mutationFn: async () => {
-      const { data: reminder } = await api.post('/api/reminders', {
+      await api.put(`/api/reminders/${id}`, {
         title: title || null,
         content_text: text || null,
         tags: tags || null,
       })
-      if (pastedFiles.length > 0) {
-        await api.put(`/api/reminders/${reminder.id}/link-attachments`, {
-           filenames: pastedFiles.map(f => f.filename)
+      const newFiles = pastedFiles.filter(f => !f.id)
+      if (newFiles.length > 0) {
+        await api.put(`/api/reminders/${id}/link-attachments`, {
+           filenames: newFiles.map(f => f.filename)
         })
       }
-      return reminder
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reminders'] })
-      queryClient.invalidateQueries({ queryKey: ['tags'] })
-      navigate('/dashboard')
+      qc.invalidateQueries({ queryKey: ['reminders'] })
+      navigate(`/reminders/${id}`)
     },
   })
 
@@ -127,61 +145,57 @@ export default function NewReminder() {
     }
   }
 
+  if (isLoading) return <div className="p-20 text-center animate-pulse text-emerald-500"><Brain className="w-12 h-12 mx-auto mb-4" /></div>
+
   return (
     <div className="max-w-[1600px] mx-auto px-4 lg:px-8 pb-32 animate-fade-in">
       <div className="flex flex-col lg:flex-row gap-10 items-start">
         
-        {/* LEFT COLUMN: MAIN EDITOR */}
+        {/* MAIN EDITOR */}
         <div className="flex-1 space-y-8 w-full">
           <div className="space-y-2 mb-10">
             <div className="flex items-center gap-2">
                <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Knowledge Interception</p>
+               <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em]">Neural Modification</p>
             </div>
-            <h1 className="text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase italic leading-none">Inject <span className="text-emerald-500 not-italic">Neural</span></h1>
+            <h1 className="text-5xl lg:text-7xl font-black text-white tracking-tighter uppercase italic leading-none">Refine <span className="text-emerald-500 not-italic">Knowledge</span></h1>
           </div>
 
           <div className="bg-[#0f172a] border border-white/5 rounded-[3.5rem] p-8 lg:p-16 shadow-2xl space-y-12 relative overflow-hidden">
-             {/* Title Input */}
+             {/* Title */}
              <div className="space-y-4 relative">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] ml-6">Node Descriptor</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-8 flex items-center pointer-events-none text-slate-700 group-focus-within:text-emerald-500 transition-colors">
-                     <BookOpen className="w-6 h-6" />
-                  </div>
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] pl-20 pr-10 py-7 text-2xl font-black text-white placeholder-slate-800 focus:outline-none focus:border-emerald-500/30 transition-all shadow-inner"
-                    placeholder="Enter node title..."
-                  />
-                  
-                  <AnimatePresence>
-                    {similarNotes.length > 0 && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 right-0 mt-6 z-[60] p-8 bg-[#0f172a]/95 border border-amber-500/20 backdrop-blur-3xl rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.5)]"
-                      >
-                         <div className="flex items-center gap-3 mb-6">
-                            <AlertCircle className="w-6 h-6 text-amber-500" />
-                            <p className="text-xs font-black text-amber-500 uppercase tracking-widest">Conflicting Knowledge Found</p>
-                         </div>
-                         <div className="space-y-3">
-                            {similarNotes.map(n => (
-                               <Link key={n.id} to={`/reminders/${n.id}`} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group">
-                                  <p className="text-sm font-bold text-white truncate max-w-[85%]">{n.title}</p>
-                                  <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
-                               </Link>
-                            ))}
-                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-black/40 border border-white/5 rounded-[2.5rem] px-10 py-7 text-2xl font-black text-white placeholder-slate-800 focus:outline-none focus:border-emerald-500/30 transition-all shadow-inner"
+                  placeholder="Enter node title..."
+                />
+                <AnimatePresence>
+                  {similarNotes.length > 0 && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+                      className="absolute top-full left-0 right-0 mt-6 z-[60] p-8 bg-[#0f172a]/95 border border-amber-500/20 backdrop-blur-3xl rounded-[2.5rem] shadow-2xl"
+                    >
+                       <div className="flex items-center gap-3 mb-6">
+                          <AlertCircle className="w-6 h-6 text-amber-500" />
+                          <p className="text-xs font-black text-amber-500 uppercase tracking-widest">Conflicting Nodes Detected</p>
+                       </div>
+                       <div className="space-y-3">
+                          {similarNotes.map(n => (
+                             <Link key={n.id} to={`/reminders/${n.id}`} className="flex items-center justify-between p-5 bg-white/5 rounded-2xl hover:bg-white/10 transition-all group">
+                                <p className="text-sm font-bold text-white truncate max-w-[85%]">{n.title}</p>
+                                <ArrowRight className="w-5 h-5 text-slate-600 group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                             </Link>
+                          ))}
+                       </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
              </div>
 
-             {/* Content Area */}
+             {/* Content */}
              <div className="space-y-4">
                 <div className="flex items-center justify-between px-6">
                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Synthesis Engine</label>
@@ -201,28 +215,16 @@ export default function NewReminder() {
                   ref={textAreaRef}
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  onPaste={(e) => {
-                    const items = e.clipboardData.items;
-                    for (let i = 0; i < items.length; i++) {
-                      if (items[i].type.indexOf('image') !== -1) {
-                        const blob = items[i].getAsFile();
-                        if (blob) { e.preventDefault(); uploadAndAdd(blob); }
-                      }
-                    }
-                  }}
                   rows={20}
-                  className="w-full bg-black/40 border border-white/5 rounded-[3rem] px-10 py-10 text-lg font-medium text-slate-300 placeholder-slate-800 focus:outline-none focus:border-emerald-500/30 transition-all resize-none shadow-inner scrollbar-hide leading-relaxed"
-                  placeholder="Paste your knowledge fragment or synthesize from scratch..."
+                  className="w-full bg-black/40 border border-white/5 rounded-[3rem] px-10 py-10 text-lg font-medium text-slate-300 focus:outline-none focus:border-emerald-500/30 transition-all resize-none shadow-inner scrollbar-hide leading-relaxed"
                 />
              </div>
 
-             {/* Media Gallery */}
+             {/* Media */}
              <div className="space-y-6 pt-6 border-t border-white/5">
-                <div className="flex items-center justify-between px-6">
-                   <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                      <ImageIcon className="w-4 h-4 text-emerald-500" /> Neural Assets ({pastedFiles.length})
-                   </p>
-                </div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest px-6 flex items-center gap-2">
+                   <ImageIcon className="w-4 h-4 text-emerald-500" /> Neural Assets ({pastedFiles.length})
+                </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6 px-4">
                    <AnimatePresence>
                       {pastedFiles.map((file, idx) => (
@@ -249,7 +251,7 @@ export default function NewReminder() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN: NEURAL CONTROLS (Sidebar on Desktop) */}
+        {/* SIDEBAR: NEURAL CONTROLS */}
         <div className="w-full lg:w-96 space-y-8 lg:sticky lg:top-8">
            <div className="bg-[#0f172a] border border-white/5 rounded-[3rem] p-10 shadow-2xl space-y-10">
               <div className="space-y-6">
@@ -265,10 +267,8 @@ export default function NewReminder() {
                     onChange={(e) => setTags(e.target.value)}
                     onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
                     className="w-full bg-black/40 border border-white/5 rounded-2xl px-6 py-5 text-sm font-bold text-emerald-500 placeholder-slate-800 focus:outline-none focus:border-emerald-500/30 transition-all"
-                    placeholder="#System #Guide..."
                   />
                   
-                  {/* TAG SUGGESTIONS */}
                   <AnimatePresence>
                      {showTagSuggestions && (
                         <motion.div 
@@ -292,7 +292,7 @@ export default function NewReminder() {
                 </div>
 
                 <div className="flex flex-wrap gap-2 pt-2">
-                   {existingTags?.slice(0, 15).map((t: any) => {
+                   {allTags?.slice(0, 15).map((t: any) => {
                       const isActive = tags.toLowerCase().includes(t.name.toLowerCase())
                       return (
                         <button
@@ -310,20 +310,15 @@ export default function NewReminder() {
 
               <div className="pt-8 border-t border-white/5 space-y-4">
                  <button
-                  onClick={() => createMutation.mutate()}
-                  disabled={createMutation.isPending || (!title && !text)}
-                  className="w-full py-7 rounded-[2.5rem] bg-emerald-500 text-[#020617] font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-emerald-400 shadow-[0_20px_60px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-20 disabled:pointer-events-none"
+                  onClick={() => updateMutation.mutate()}
+                  disabled={updateMutation.isPending}
+                  className="w-full py-7 rounded-[2.5rem] bg-emerald-500 text-[#020617] font-black text-sm uppercase tracking-[0.4em] flex items-center justify-center gap-4 hover:bg-emerald-400 shadow-[0_20px_60px_rgba(16,185,129,0.3)] transition-all active:scale-95 disabled:opacity-20"
                 >
-                  {createMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Send className="w-5 h-5" /> Commit Note</>}
+                  {updateMutation.isPending ? <Loader2 className="w-6 h-6 animate-spin" /> : <><Save className="w-5 h-5" /> Commit Modifications</>}
                 </button>
-                
-                <div className="p-6 bg-white/[0.02] border border-white/5 rounded-3xl">
-                   <div className="flex items-center gap-3 mb-2 text-slate-500">
-                      <Zap className="w-3.5 h-3.5" />
-                      <p className="text-[10px] font-black uppercase tracking-widest">Auto-Scheduler</p>
-                   </div>
-                   <p className="text-[10px] font-bold text-slate-600 uppercase">Knowledge will be reinforced in 15 minutes.</p>
-                </div>
+                <button onClick={() => navigate(-1)} className="w-full py-5 rounded-[2.5rem] bg-white/5 text-slate-500 font-black text-[10px] uppercase tracking-widest hover:bg-white/10 transition-all">
+                   Discard Changes
+                </button>
               </div>
            </div>
         </div>

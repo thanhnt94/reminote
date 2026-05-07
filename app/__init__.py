@@ -145,8 +145,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    from app.api import api_router
-    app.include_router(api_router)
+    from app.api import auth, reminders, admin, attachments
+    app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+    app.include_router(reminders.router, prefix="/api/reminders", tags=["reminders"])
+    app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
+    app.include_router(attachments.router, prefix="/api/attachments", tags=["attachments"])
 
     static_dir = Path(__file__).parent / "static"
     dist_dir = static_dir / "dist"

@@ -7,6 +7,7 @@ import AdminLayout from '@/components/AdminLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import NewReminder from '@/pages/NewReminder'
+import EditReminder from '@/pages/EditReminder'
 import ReminderDetail from '@/pages/ReminderDetail'
 import TagsPage from '@/pages/TagsPage'
 import SettingsPage from '@/pages/SettingsPage'
@@ -16,7 +17,11 @@ import SSOSettings from '@/pages/admin/SSOSettings'
 import TelegramSettings from '@/pages/admin/TelegramSettings'
 import WebPushSettings from '@/pages/admin/WebPushSettings'
 import AdminUsers from '@/pages/admin/AdminUsers'
-import { Loader2 } from 'lucide-react'
+import { 
+  Upload, X, Send, Tag, Check, Brain, Sparkles, 
+  BookOpen, FileText, Image as ImageIcon, Loader2,
+  Zap, Info, Plus, Trash2, Bold, Italic, Code, Link, Heading, List
+} from 'lucide-react'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore()
@@ -62,6 +67,7 @@ export default function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/reminders/new" element={<NewReminder />} />
         <Route path="/reminders/:id" element={<ReminderDetail />} />
+        <Route path="/reminders/:id/edit" element={<EditReminder />} />
         <Route path="/review" element={<ReviewPage />} />
         <Route path="/tags" element={<TagsPage />} />
         <Route path="/settings" element={<SettingsPage />} />

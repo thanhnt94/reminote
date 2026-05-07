@@ -15,6 +15,7 @@ from app.schemas.reminder import (
 from app.services import reminder_service, image_service, bot_service
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 import random
+import os
 
 router = APIRouter()
 
@@ -241,6 +242,54 @@ async def upload_attachments(
     await db.refresh(reminder, attribute_names=["attachments", "tags_rel"])
     return ReminderResponse.model_validate(reminder)
 
+
+@router.put("/{reminder_id}/link-attachments")
+async def link_attachments(
+    reminder_id: int,
+    data: dict,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Link pre-uploaded files to a reminder."""
+    reminder = await reminder_service.get_reminder(db, reminder_id, user_id=user.id)
+    if not reminder:
+        raise HTTPException(status_code=404, detail="Reminder not found")
+
+    filenames = data.get("filenames", [])
+    for path in filenames:
+        # Create attachment record
+        # Note: We need some metadata like size/content-type if possible, or just default
+        attachment = Attachment(
+            reminder_id=reminder_id,
+            file_path=path,
+            original_filename=os.path.basename(path),
+            file_size=0, # Unknown at this point unless we stat
+            content_type="image/png"
+        )
+        db.add(attachment)
+
+    await db.commit()
+    return {"status": "success"}
+
+@router.get("/search/similar-titles")
+async def find_similar(
+    q: str = Query(..., min_length=2),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Find similar titles for duplicate detection."""
+    reminders = await reminder_service.search_similar_titles(db, user.id, q)
+    return [ReminderResponse.model_validate(r) for r in reminders]
+
+@router.get("/tags/suggestions")
+async def suggest_tags(
+    q: str = Query(""),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get tag suggestions based on prefix."""
+    suggestions = await reminder_service.get_tag_suggestions(db, user.id, q)
+    return suggestions
 
 @router.post("/test-push")
 async def test_push(

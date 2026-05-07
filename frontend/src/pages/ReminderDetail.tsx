@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import { 
   ArrowLeft, Brain, Trash2, Archive, Clock, 
   Tag, Sparkles, BookOpen, CheckCircle2, 
-  Calendar, RotateCcw, ShieldAlert
+  Calendar, RotateCcw, ShieldAlert, Pencil
 } from 'lucide-react'
 import api from '@/api/client'
 import MemoryBadge from '@/components/MemoryBadge'
@@ -54,6 +54,13 @@ export default function ReminderDetail() {
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div className="flex gap-3">
+          <button 
+            onClick={() => navigate(`/reminders/${id}/edit`)} 
+            className="p-4 rounded-2xl bg-white/5 text-slate-500 hover:text-emerald-500 hover:bg-emerald-500/10 border border-white/5 transition-all active:scale-90"
+            title="Edit Knowledge Node"
+          >
+            <Pencil className="w-5 h-5" />
+          </button>
           <button 
             onClick={() => archiveMutation.mutate()} 
             className={`p-4 rounded-2xl border transition-all active:scale-90 ${r.is_archived ? 'bg-emerald-500 text-black border-emerald-400 shadow-xl shadow-emerald-500/20' : 'bg-white/5 text-slate-500 border-white/5 hover:border-white/10'}`}
