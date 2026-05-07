@@ -13,28 +13,34 @@ class Settings(BaseSettings):
     APP_NAME: str = "RemiNote"
     APP_VERSION: str = "1.2.0"
     SECRET_KEY: str = "change-me-in-production"
-    DEBUG: bool = False # Production default
+    DEBUG: bool = True # Enabled for troubleshooting
 
     # --- Paths ---
     BASE_DIR: Path = Path(__file__).resolve().parent.parent
-    # FIX: Put Storage INSIDE the project root for easier management and Nginx alignment
-    STORAGE_BASE: Path = Path(__file__).resolve().parent.parent / "Storage"
+    
+    # CENTRALIZED STORAGE: Resolves to /var/www/Storage on VPS
+    # path/to/Ecosystem/reminote/app/config.py -> Ecosystem/reminote/ -> Ecosystem/ -> path/to/Storage
+    STORAGE_BASE: Path = Path(__file__).resolve().parent.parent.parent / "Storage"
 
     @property
     def DB_PATH(self) -> Path:
         db_dir = self.STORAGE_BASE / "database"
-        db_dir.mkdir(parents=True, exist_ok=True)
+        # Only create if we have write access (to avoid errors on weird environments)
+        try:
+            db_dir.mkdir(parents=True, exist_ok=True)
+        except Exception: pass
         return db_dir / "reminote.db"
 
     @property
     def DATABASE_URL(self) -> str:
-        # Use absolute path to avoid ambiguity on server
         return f"sqlite+aiosqlite:///{self.DB_PATH.absolute()}"
 
     @property
     def UPLOAD_DIR(self) -> Path:
         upload_dir = self.STORAGE_BASE / "uploads" / "RemiNoteMedia"
-        upload_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            upload_dir.mkdir(parents=True, exist_ok=True)
+        except Exception: pass
         return upload_dir
 
     # --- Auth ---
@@ -48,7 +54,6 @@ class Settings(BaseSettings):
 
     @property
     def SSO_REDIRECT_URI(self) -> str:
-        # Production Domain
         return f"https://note.mindstack.click/api/auth/sso/callback"
 
     # --- Image Processing ---

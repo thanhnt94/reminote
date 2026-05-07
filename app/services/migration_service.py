@@ -1,40 +1,42 @@
 import logging
 import os
-import asyncio
-from alembic.config import Config
-from alembic import command
+import subprocess
+import sys
 
 logger = logging.getLogger("reminote.migrations")
 
 async def run_auto_migrations():
-    """Automatically run alembic migrations to the latest version."""
-    # Ensure we are in the right directory
+    """Automatically run alembic migrations using a separate process to avoid loop conflicts."""
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    ini_path = os.path.join(base_dir, "alembic.ini")
-    migrations_path = os.path.join(base_dir, "migrations")
+    venv_bin = os.path.join(base_dir, "venv", "bin", "alembic")
     
-    if not os.path.exists(ini_path):
-        logger.error(f"alembic.ini not found at {ini_path}")
-        return
+    # Fallback for local windows or different paths
+    if not os.path.exists(venv_bin):
+        venv_bin = "alembic"
 
-    logger.info("Initializing Automated Schema Synchronization Protocol...")
+    logger.info("🚀 Launching Subprocess Schema Synchronization...")
     
-    # We run the migration in a thread pool because Alembic commands are synchronous
-    # but our env.py might attempt to use the running event loop.
-    def sync_run():
-        try:
-            alembic_cfg = Config(ini_path)
-            alembic_cfg.set_main_option("script_location", migrations_path)
+    try:
+        # Run: alembic upgrade head
+        # We set PYTHONPATH to base_dir so alembic can find 'app'
+        env = os.environ.copy()
+        env["PYTHONPATH"] = base_dir
+        
+        process = subprocess.run(
+            [venv_bin, "upgrade", "head"],
+            cwd=base_dir,
+            capture_output=True,
+            text=True,
+            env=env
+        )
+        
+        if process.returncode == 0:
+            logger.info("✅ Database schema synchronized successfully via subprocess.")
+            if process.stdout:
+                logger.debug(f"Alembic output: {process.stdout}")
+        else:
+            logger.error(f"❌ Migration failed with exit code {process.returncode}")
+            logger.error(f"Error output: {process.stderr}")
             
-            from app.config import get_settings
-            settings = get_settings()
-            # Use SYNC sqlite for migration tools
-            db_url = str(settings.DATABASE_URL).replace("sqlite+aiosqlite:///", "sqlite:///")
-            alembic_cfg.set_main_option("sqlalchemy.url", db_url)
-
-            command.upgrade(alembic_cfg, "head")
-            logger.info("Database schema is now synchronized at 'head'.")
-        except Exception as e:
-            logger.error(f"Migration protocol encounter: {e}")
-
-    await asyncio.to_thread(sync_run)
+    except Exception as e:
+        logger.error(f"💥 Migration process encountered a critical failure: {e}")

@@ -1,9 +1,8 @@
 import asyncio
 from logging.config import fileConfig
-from sqlalchemy import pool, engine_from_config
+from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
 
 # Import our app parts
@@ -11,8 +10,6 @@ from app.database import Base
 from app.config import get_settings
 
 settings = get_settings()
-
-# this is the Alembic Config object
 config = context.config
 
 if config.config_file_name is not None:
@@ -21,9 +18,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 def get_url():
-    # Use sync sqlite for migrations by default to avoid loop conflicts
-    url = str(settings.DATABASE_URL).replace("sqlite+aiosqlite:///", "sqlite:///")
-    return url
+    # Use the async URL for the async engine in env.py
+    return f"sqlite+aiosqlite:///{settings.DB_PATH.absolute()}"
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode."""
@@ -50,7 +46,7 @@ def do_run_migrations(connection: Connection) -> None:
         context.run_migrations()
 
 async def run_async_migrations() -> None:
-    """Async migration path."""
+    """Standard async migration run."""
     configuration = config.get_section(config.config_ini_section, {})
     configuration["sqlalchemy.url"] = get_url()
     
@@ -67,35 +63,9 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-    url = get_url()
-    
-    # If the URL is sync (standard sqlite), we run in sync mode
-    if "aiosqlite" not in url:
-        configuration = config.get_section(config.config_ini_section, {})
-        configuration["sqlalchemy.url"] = url
-        connectable = engine_from_config(
-            configuration,
-            prefix="sqlalchemy.",
-            poolclass=pool.NullPool,
-        )
-
-        with connectable.connect() as connection:
-            do_run_migrations(connection)
-
-        connectable.dispose()
-    else:
-        # Fallback to async if specifically requested via URL
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            # We are in a loop, we can't use asyncio.run
-            # This case is handled by our migration_service running in a thread
-            pass
-        else:
-            asyncio.run(run_async_migrations())
+    # Since this is now always called from a separate process (subprocess),
+    # we can safely use asyncio.run()
+    asyncio.run(run_async_migrations())
 
 if context.is_offline_mode():
     run_migrations_offline()
