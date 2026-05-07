@@ -140,14 +140,9 @@ export default function NewReminder() {
             <X className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-3">
-             <button
-              onClick={() => createMutation.mutate()}
-              disabled={createMutation.isPending || (!title && !text)}
-              className="flex items-center gap-2 px-6 py-2 bg-emerald-500 text-black rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-20"
-            >
-              {createMutation.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <><Send className="w-3.5 h-3.5" /> Inject</>}
-            </button>
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Neural Draft</span>
           </div>
       </header>
 
@@ -265,12 +260,11 @@ export default function NewReminder() {
            </div>
 
            {/* Actions Row */}
-           <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+           <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                  <button onClick={() => insertMarkdown('**', '**')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Bold className="w-4 h-4" /></button>
                  <button onClick={() => insertMarkdown('*', '*')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Italic className="w-4 h-4" /></button>
                  <button onClick={() => insertMarkdown('```\n', '\n```')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Code className="w-4 h-4" /></button>
-                 <button onClick={() => insertMarkdown('# ')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Heading className="w-4 h-4" /></button>
                  <div className="w-px h-6 bg-white/5 mx-1" />
                  <button onClick={() => fileRef.current?.click()} className="p-2.5 bg-white/5 rounded-lg border border-emerald-500/20 text-emerald-500">
                     <ImageIcon className="w-4 h-4" />
@@ -278,9 +272,20 @@ export default function NewReminder() {
                  </button>
               </div>
 
-              <div className="flex items-center gap-2">
-                 {isPasting && <Loader2 className="w-4 h-4 text-emerald-500 animate-spin" />}
-              </div>
+              <button
+                onClick={() => createMutation.mutate()}
+                disabled={createMutation.isPending || (!title && !text)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 text-black rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-20"
+              >
+                {createMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Inject</span>
+                  </>
+                )}
+              </button>
            </div>
         </div>
       </footer>
