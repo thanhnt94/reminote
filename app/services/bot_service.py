@@ -55,10 +55,12 @@ async def init_bot_app():
         app = Application.builder().token(token).build()
         bot = app.bot # Assign global bot instance
         
-        from app.bot.handlers import handle_start, handle_link, handle_message, handle_photo, handle_callback
+        from app.bot.handlers import handle_start, handle_link, handle_message, handle_photo, handle_callback, handle_next
         
         app.add_handler(CommandHandler("start", handle_start))
         app.add_handler(CommandHandler("link", handle_link))
+        app.add_handler(CommandHandler("next", handle_next))
+        app.add_handler(CommandHandler("review", handle_next))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
         app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
         app.add_handler(CallbackQueryHandler(handle_callback))

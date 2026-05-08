@@ -10,7 +10,48 @@ from app.models.user import User
 from app.models.reminder import Reminder, Attachment
 from app.services.reminder_service import create_reminder, process_interaction
 
+from app.models.setting import SystemSetting
+from app.services.image_service import get_absolute_path
+
 logger = logging.getLogger("reminote.bot")
+
+async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE, reminder: Reminder, chat_id: str):
+    """Shared utility to send a reminder card to Telegram."""
+    from sqlalchemy import select
+    async with async_session() as db:
+        res = await db.execute(select(SystemSetting).where(SystemSetting.key == "TELEGRAM_WEB_BASE_URL"))
+        setting = res.scalar_one_or_none()
+        base_url = setting.value if setting else "http://localhost:5070"
+
+    detail_url = f"{base_url}/reminders/{reminder.id}"
+    
+    keyboard = [
+        [
+            InlineKeyboardButton("🔄 Review", callback_data=f"rem:{reminder.id}:review"),
+            InlineKeyboardButton("✅ Mastered", callback_data=f"rem:{reminder.id}:understand"),
+        ],
+        [InlineKeyboardButton("🌐 View Full Detail", url=detail_url)],
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    
+    title = reminder.title or "Knowledge Fragment"
+    content = reminder.content_text or "Reinforcement required."
+    
+    header = f"🛡️ **NEURAL REINFORCEMENT**\n\n"
+    header += f"🏷️ **{title}**\n\n"
+    
+    # Handle image if exists
+    if reminder.attachments:
+        abs_path = get_absolute_path(reminder.attachments[0].file_path)
+        if abs_path.exists():
+            caption = header + (content[:1000] + "..." if len(content) > 1000 else content)
+            with open(abs_path, "rb") as photo:
+                await context.bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=reply_markup, parse_mode="Markdown")
+                return
+
+    # Text only
+    text_msg = header + (content[:3000] + "..." if len(content) > 3000 else content)
+    await context.bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup, parse_mode="Markdown")
 
 async def get_user_by_chat_id(chat_id: str):
     async with async_session() as db:
@@ -152,3 +193,40 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text=f"{query.message.text}\n\n---\n{status_msg}\nNext session: {reminder.next_push_at.strftime('%H:%M %d/%m')}",
         parse_mode="Markdown"
     )
+
+async def handle_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Handle /next or /review command to manually fetch the top priority node."""
+    chat_id = str(update.effective_chat.id)
+    user = await get_user_by_chat_id(chat_id)
+    
+    if not user:
+        await update.message.reply_text("⚠️ Node not linked. Use `/link` to begin.")
+        return
+
+    async with async_session() as db:
+        from sqlalchemy import select, func, desc, case
+        from sqlalchemy.orm import selectinload
+        
+        now = datetime.now()
+        # Same NRS logic as the API
+        weight_case = case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
+        # Using unixepoch for consistency with SQLite logic used in API
+        days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
+        dynamic_score = (Reminder.priority_score + (days_since * 10.0)) * weight_case
+        
+        stmt = (
+            select(Reminder)
+            .where(Reminder.user_id == user.id)
+            .where(Reminder.is_archived == False)
+            .options(selectinload(Reminder.attachments))
+            .order_by(desc(dynamic_score))
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        reminder = result.scalar_one_or_none()
+        
+        if not reminder:
+            await update.message.reply_text("Your knowledge base is empty. Submit some thoughts first!")
+            return
+            
+        await send_reminder_to_tg(update, context, reminder, chat_id)
