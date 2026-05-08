@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
+from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
 
 from app.database import get_db
@@ -119,6 +120,7 @@ async def get_review_queue(
         select(Reminder)
         .where(Reminder.user_id == user.id)
         .where(Reminder.is_archived == False)
+        .options(selectinload(Reminder.tags_rel), selectinload(Reminder.attachments))
         .order_by(desc(dynamic_score))
         .limit(30)
     )
