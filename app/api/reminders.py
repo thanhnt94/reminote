@@ -13,6 +13,7 @@ from app.api.auth import get_current_user
 from app.schemas.reminder import (
     ReminderCreate, ReminderUpdate, ReminderResponse,
     InteractionRequest, ReminderListResponse, TagUpdate,
+    TagCreate,
 )
 from app.services import reminder_service, image_service, bot_service
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
