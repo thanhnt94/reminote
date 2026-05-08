@@ -218,7 +218,7 @@ export default function NewReminder() {
               {pastedFiles.map((file, idx) => (
                 <div key={idx} className="relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-white/10 group">
                    <img src={file.url} className="w-full h-full object-cover" alt="" />
-                   <button onClick={() => setPastedFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-lg">
+                   <button onClick={() => setPastedFiles(prev => prev.filter((_, i: number) => i !== idx))} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-lg">
                       <X className="w-3 h-3" />
                    </button>
                 </div>

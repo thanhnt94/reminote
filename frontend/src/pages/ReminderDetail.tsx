@@ -9,7 +9,6 @@ import {
   Maximize2, X, Zap, Target
 } from 'lucide-react'
 import api from '@/api/client'
-import MemoryBadge from '@/components/MemoryBadge'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
 
 export default function ReminderDetail() {
@@ -101,7 +100,9 @@ export default function ReminderDetail() {
 
             <div className="space-y-8 relative z-10">
               <div className="flex items-center gap-4">
-                <MemoryBadge level={r.memory_level} size="lg" />
+                <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl">
+                   <span className="text-xl font-black text-emerald-500 italic">RANKING SCORE</span>
+                </div>
                 <div className="h-px flex-1 bg-white/5" />
                 <span className="text-[10px] font-bold text-slate-700 uppercase tracking-widest">Neural Fragment</span>
               </div>
@@ -110,7 +111,12 @@ export default function ReminderDetail() {
                 {r.title || 'Untitled Knowledge Node'}
               </h1>
 
-              <div className="w-20 h-2 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+              <div className="flex items-center gap-3">
+                 <div className="w-12 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.5)]" />
+                 <span className={`text-[9px] font-black uppercase tracking-widest ${r.manual_weight === 'high' ? 'text-emerald-500' : 'text-slate-500'}`}>
+                    Priority: {r.manual_weight}
+                 </span>
+              </div>
 
               <div className="pt-4">
                 <MarkdownRenderer content={r.content_text || ''} className="!text-lg !leading-relaxed" />
@@ -153,21 +159,21 @@ export default function ReminderDetail() {
           {/* Telemetry Data */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="bg-[#0f172a] rounded-[2.5rem] p-8 border border-white/5 flex items-center gap-5">
+              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-emerald-500">
+                <Zap className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Neural Priority</p>
+                <p className="text-xl font-black text-white">{Math.round(r.priority_score)}</p>
+              </div>
+            </div>
+            <div className="bg-[#0f172a] rounded-[2.5rem] p-8 border border-white/5 flex items-center gap-5">
               <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-600">
                 <Calendar className="w-5 h-5" />
               </div>
               <div>
                 <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Node Integrated</p>
                 <p className="text-xs font-bold text-slate-300">{new Date(r.created_at).toLocaleDateString()}</p>
-              </div>
-            </div>
-            <div className="bg-[#0f172a] rounded-[2.5rem] p-8 border border-white/5 flex items-center gap-5">
-              <div className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center text-slate-600">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Next Reinforcement</p>
-                <p className="text-xs font-bold text-slate-300">{new Date(r.next_push_at).toLocaleString()}</p>
               </div>
             </div>
           </div>
