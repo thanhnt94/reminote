@@ -184,13 +184,27 @@ async def delete_reminder(db: AsyncSession, reminder: Reminder):
 async def get_all_tags(db: AsyncSession, user_id: int):
     query = (
         select(Tag.name, func.count(Reminder.id).label("count"))
-        .join(Reminder.tags_rel)
-        .where(Reminder.user_id == user_id)
+        .outerjoin(Reminder.tags_rel)
+        .where(or_(Reminder.user_id == user_id, Reminder.user_id == None))
         .group_by(Tag.name)
         .order_by(desc("count"))
     )
     result = await db.execute(query)
     return [{"name": row[0], "count": row[1]} for row in result.all()]
+
+
+async def create_tag(db: AsyncSession, user_id: int, name: str):
+    name = name.strip().lstrip('#').lower()
+    if not name: return None
+    
+    result = await db.execute(select(Tag).where(Tag.name == name))
+    tag = result.scalar_one_or_none()
+    if not tag:
+        tag = Tag(name=name)
+        db.add(tag)
+        await db.commit()
+        await db.refresh(tag)
+    return tag
 
 async def rename_tag(db: AsyncSession, user_id: int, old_name: str, new_name: str):
     result = await db.execute(select(Tag).where(Tag.name == old_name.lower().lstrip('#')))

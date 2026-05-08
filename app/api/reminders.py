@@ -31,6 +31,16 @@ async def list_tags(
     return await reminder_service.get_all_tags(db, user.id)
 
 
+@router.post("/tags")
+async def create_tag(
+    data: TagCreate,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create a new tag."""
+    return await reminder_service.create_tag(db, user.id, data.name)
+
+
 @router.put("/tags/{tag_name}")
 async def update_tag(
     tag_name: str,

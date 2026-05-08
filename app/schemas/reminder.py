@@ -70,7 +70,7 @@ class ReminderResponse(BaseModel):
 
 
 class InteractionRequest(BaseModel):
-    action: Literal["understand", "review", "mastered"] # Professional terms
+    action: Literal["again", "got_it", "mastered"] # Updated to natural terms
 
 
 class ReminderListResponse(BaseModel):
@@ -80,3 +80,7 @@ class ReminderListResponse(BaseModel):
 
 class TagUpdate(BaseModel):
     new_name: str
+
+
+class TagCreate(BaseModel):
+    name: str

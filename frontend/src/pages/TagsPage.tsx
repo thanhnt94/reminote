@@ -10,10 +10,21 @@ export default function TagsPage() {
   const qc = useQueryClient()
   const [editingName, setEditingName] = useState<string | null>(null)
   const [newName, setNewName] = useState('')
+  const [createTagName, setCreateTagName] = useState('')
 
   const { data: tags, isLoading } = useQuery({
     queryKey: ['tags'],
     queryFn: async () => (await api.get('/api/reminders/tags')).data,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: async (name: string) => {
+      return (await api.post('/api/reminders/tags', { name })).data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tags'] })
+      setCreateTagName('')
+    },
   })
 
   const renameMutation = useMutation({
@@ -44,9 +55,31 @@ export default function TagsPage() {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div className="text-right">
-          <h1 className="text-3xl font-black text-white">Quản lý Tag</h1>
-          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Hệ thống phân loại kiến thức</p>
+          <h1 className="text-3xl font-black text-white">Tag Management</h1>
+          <p className="text-slate-500 text-xs font-bold uppercase tracking-widest mt-1">Knowledge classification system</p>
         </div>
+      </div>
+
+      {/* CREATE TAG INPUT */}
+      <div className="mb-8 glass p-6 rounded-3xl border border-white/5 shadow-xl flex items-center gap-4">
+        <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+          <Tag className="w-6 h-6" />
+        </div>
+        <input 
+          type="text" 
+          placeholder="Enter new tag name (e.g. #python)"
+          value={createTagName}
+          onChange={(e) => setCreateTagName(e.target.value)}
+          onKeyDown={(e) => { if(e.key === 'Enter') createMutation.mutate(createTagName) }}
+          className="flex-1 bg-transparent border-none focus:outline-none text-white font-bold placeholder:text-slate-600"
+        />
+        <button 
+          onClick={() => createMutation.mutate(createTagName)}
+          disabled={!createTagName.trim() || createMutation.isPending}
+          className="px-6 py-3 bg-emerald-500 text-black font-black text-[10px] uppercase tracking-widest rounded-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+        >
+          {createMutation.isPending ? 'Saving...' : 'Add Tag'}
+        </button>
       </div>
 
       <div className="glass rounded-[2.5rem] overflow-hidden border border-white/5 shadow-2xl">
@@ -54,10 +87,10 @@ export default function TagsPage() {
           {isLoading ? (
             <div className="py-20 text-center animate-pulse">
               <Brain className="w-10 h-10 text-emerald-400 mx-auto mb-4" />
-              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Đang tải dữ liệu...</p>
+              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-widest">Loading tags...</p>
             </div>
-          ) : tags?.length === 0 ? (
-            <div className="py-20 text-center text-slate-600 italic">Chưa có tag nào được sử dụng.</div>
+          ) : !tags || tags.length === 0 ? (
+            <div className="py-20 text-center text-slate-600 italic">No tags found. Start by creating one above.</div>
           ) : (
             <div className="divide-y divide-white/5">
               {tags?.map((t: any) => (
@@ -86,7 +119,7 @@ export default function TagsPage() {
                     ) : (
                       <div>
                         <h3 className="font-bold text-slate-200">#{t.name}</h3>
-                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-0.5">Sử dụng trong {t.count} thẻ</p>
+                        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-0.5">Used in {t.count} nodes</p>
                       </div>
                     )}
                   </div>
@@ -100,7 +133,7 @@ export default function TagsPage() {
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => { if(confirm(`Xóa tag #${t.name}? Hành động này sẽ gỡ tag khỏi tất cả các thẻ.`)) deleteMutation.mutate(t.name) }}
+                        onClick={() => { if(confirm(`Delete tag #${t.name}? This will remove the tag from all nodes.`)) deleteMutation.mutate(t.name) }}
                         className="p-3 bg-white/5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
                       >
                         <Trash2 className="w-4 h-4" />
