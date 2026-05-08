@@ -29,6 +29,7 @@ export default function TagsPage() {
 
   const renameMutation = useMutation({
     mutationFn: async ({ oldName, newName }: { oldName: string, newName: string }) => {
+      if (!oldName || !newName) throw new Error('Tag name cannot be empty')
       return (await api.put(`/api/reminders/tags/${oldName}`, { new_name: newName })).data
     },
     onSuccess: () => {
@@ -40,6 +41,7 @@ export default function TagsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async (tagName: string) => {
+      if (!tagName) throw new Error('Tag name cannot be empty')
       return (await api.delete(`/api/reminders/tags/${tagName}`)).data
     },
     onSuccess: () => {
