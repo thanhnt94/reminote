@@ -110,7 +110,8 @@ async def get_review_queue(
     Uses NRS (Neural Ranking Score) to pick the most relevant fragments.
     """
     now = datetime.now(timezone.utc)
-    weight_case = func.case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
+    from sqlalchemy import case
+    weight_case = case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
     days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
     dynamic_score = (Reminder.priority_score + (days_since * 10.0)) * weight_case
 
