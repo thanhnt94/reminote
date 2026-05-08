@@ -18,6 +18,7 @@ class ReminderCreate(BaseModel):
     title: str | None = None
     content_text: str | None = None
     tags: str | None = None
+    manual_weight: str | None = "medium"
 
 
 class ReminderUpdate(BaseModel):
@@ -37,6 +38,9 @@ class ReminderResponse(BaseModel):
     is_archived: bool
     attachments: list[AttachmentResponse] = []
     created_at: datetime
+    last_reviewed_at: datetime | None = None
+    priority_score: float = 500.0
+    manual_weight: str = "medium"
     tags: list[str] = []
 
     model_config = ConfigDict(from_attributes=True)
@@ -57,6 +61,9 @@ class ReminderResponse(BaseModel):
             "is_archived": obj.is_archived,
             "attachments": obj.attachments,
             "created_at": obj.created_at,
+            "last_reviewed_at": obj.last_reviewed_at,
+            "priority_score": obj.priority_score,
+            "manual_weight": obj.manual_weight,
             "tags": tags
         }
         return cls(**data)

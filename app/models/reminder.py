@@ -34,8 +34,12 @@ class Reminder(Base):
     content_text: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
     memory_level: Mapped[int] = mapped_column(Integer, default=0)
+    priority_score: Mapped[float] = mapped_column(default=500.0) # NRS Base Score
+    manual_weight: Mapped[str] = mapped_column(String(20), default="medium") # low, medium, high
+    
     created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     last_pushed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    last_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     next_push_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
     is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
 

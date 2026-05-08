@@ -41,16 +41,22 @@ async def get_or_create_tags(db: AsyncSession, tag_names: List[str]) -> List[Tag
         await db.flush()
     return list(existing_tags) + new_tags
 
-async def create_reminder(db: AsyncSession, user_id: int, title: Optional[str] = None, content_text: Optional[str] = None, tags: Optional[str] = None) -> Reminder:
+async def create_reminder(db: AsyncSession, user_id: int, title: Optional[str] = None, content_text: Optional[str] = None, tags: Optional[str] = None, manual_weight: str = "medium") -> Reminder:
     tag_list = re.findall(r'#(\w+)|(\w+)', tags) if tags else []
     tag_list = [t[0] or t[1] for t in tag_list]
     tag_objects = await get_or_create_tags(db, tag_list)
+    
+    # Initial priority for new fragments is high
+    initial_score = 500.0
     
     reminder = Reminder(
         user_id=user_id,
         title=title,
         content_text=content_text,
         memory_level=0,
+        priority_score=initial_score,
+        manual_weight=manual_weight,
+        last_reviewed_at=datetime.now(timezone.utc),
         next_push_at=datetime.now(timezone.utc) + INTERVALS[0],
         tags_rel=tag_objects
     )
@@ -60,23 +66,45 @@ async def create_reminder(db: AsyncSession, user_id: int, title: Optional[str] =
     return reminder
 
 async def list_reminders(db: AsyncSession, user_id: int, search: Optional[str] = None, tag: Optional[str] = None, archived: Optional[bool] = None, due_only: bool = False, limit: int = 50, offset: int = 0):
-    query = select(Reminder).where(Reminder.user_id == user_id).options(selectinload(Reminder.tags_rel), selectinload(Reminder.attachments))
+    # NRS Ranking logic:
+    # Score = (priority_score + (now - last_reviewed_at).days * 10) * WeightMultiplier
+    now = datetime.now(timezone.utc)
+    
+    # Multiplier case
+    weight_case = func.case(
+        (Reminder.manual_weight == 'high', 1.5),
+        (Reminder.manual_weight == 'low', 0.5),
+        else_=1.0
+    )
+    
+    # Ageing calculation (Days since last review)
+    # SQLite doesn't have a simple .days, so we use unixepoch differences
+    days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
+    ageing_score = days_since * 10.0
+    
+    dynamic_score = (Reminder.priority_score + ageing_score) * weight_case
+    
+    query = (
+        select(Reminder)
+        .where(Reminder.user_id == user_id)
+        .options(selectinload(Reminder.tags_rel), selectinload(Reminder.attachments))
+    )
     
     if archived is not None: query = query.where(Reminder.is_archived == archived)
-    if due_only: query = query.where(Reminder.next_push_at <= datetime.now(timezone.utc))
     if tag: query = query.join(Reminder.tags_rel).where(Tag.name == tag.lower().lstrip('#'))
     
     if search:
         search_query = f"%{search}%"
         query = query.where(or_(Reminder.title.ilike(search_query), Reminder.content_text.ilike(search_query)))
     
-    query = query.order_by(desc(Reminder.created_at))
+    # Sort by the Dynamic Neural Ranking Score
+    query = query.order_by(desc(dynamic_score))
+    
     result = await db.execute(query.limit(limit).offset(offset))
     items = result.scalars().all()
     
     count_query = select(func.count(Reminder.id)).where(Reminder.user_id == user_id)
     if archived is not None: count_query = count_query.where(Reminder.is_archived == archived)
-    if due_only: count_query = count_query.where(Reminder.next_push_at <= datetime.now(timezone.utc))
     if tag: count_query = count_query.join(Reminder.tags_rel).where(Tag.name == tag.lower().lstrip('#'))
     if search:
         count_query = count_query.where(or_(Reminder.title.ilike(f"%{search}%"), Reminder.content_text.ilike(f"%{search}%")))
@@ -85,16 +113,17 @@ async def list_reminders(db: AsyncSession, user_id: int, search: Optional[str] =
     return items, total
 
 async def get_due_reminders(db: AsyncSession, limit: int = 50) -> List[Reminder]:
-    """Fetch all reminders across all users that are due for a push notification."""
+    # For Telegram Digest, we pick top 3 based on NRS too
+    now = datetime.now(timezone.utc)
+    weight_case = func.case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
+    days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
+    dynamic_score = (Reminder.priority_score + (days_since * 10.0)) * weight_case
+
     query = (
         select(Reminder)
-        .where(Reminder.next_push_at <= datetime.now(timezone.utc))
         .where(Reminder.is_archived == False)
-        .options(
-            selectinload(Reminder.tags_rel), 
-            selectinload(Reminder.attachments), 
-            selectinload(Reminder.user)
-        )
+        .options(selectinload(Reminder.tags_rel), selectinload(Reminder.attachments), selectinload(Reminder.user))
+        .order_by(desc(dynamic_score))
         .limit(limit)
     )
     result = await db.execute(query)
@@ -115,14 +144,25 @@ async def update_reminder(db: AsyncSession, reminder: Reminder, data: dict) -> R
     return reminder
 
 async def process_interaction(db: AsyncSession, reminder: Reminder, action: str):
+    """
+    NRS Point-based Interaction:
+    - mastered: -400 points
+    - understand: -200 points
+    - review (forgotten): +150 points
+    """
     if action == "mastered":
-        reminder.memory_level = min(5, reminder.memory_level + 2) # Jump 2 levels if mastered
+        reminder.priority_score = max(0, reminder.priority_score - 400.0)
+        reminder.memory_level = min(5, reminder.memory_level + 2)
     elif action == "understand":
+        reminder.priority_score = max(0, reminder.priority_score - 200.0)
         reminder.memory_level = min(5, reminder.memory_level + 1)
-    else: # review (reset or stay)
+    else: # review / forgotten
+        reminder.priority_score = reminder.priority_score + 150.0
         reminder.memory_level = max(0, reminder.memory_level - 1)
         
+    reminder.last_reviewed_at = datetime.now(timezone.utc)
     reminder.last_pushed_at = datetime.now(timezone.utc)
+    # Keep next_push_at just in case, but NRS is primary now
     reminder.next_push_at = datetime.now(timezone.utc) + INTERVALS[reminder.memory_level]
     await db.commit()
 
@@ -163,10 +203,6 @@ async def delete_tag(db: AsyncSession, user_id: int, tag_name: str):
     result = await db.execute(select(Tag).where(Tag.name == tag_name.lower().lstrip('#')))
     tag = result.scalar_one_or_none()
     if tag:
-        # Just remove relationship for this user? No, tags are shared but we filter by user.
-        # For simplicity, if we delete a tag, we just remove it from all reminders of this user.
-        # But SQLA relationship handles this if we clear the list.
-        # This is complex, let's just delete the tag if it's no longer used.
         await db.delete(tag)
         await db.commit()
 
@@ -197,7 +233,6 @@ async def get_tag_suggestions(db: AsyncSession, user_id: int, prefix: str, limit
     """Suggest existing tags based on a prefix."""
     prefix = prefix.lower().lstrip('#')
     if not prefix:
-        # Return most popular tags
         query = (
             select(Tag.name)
             .join(Reminder.tags_rel)

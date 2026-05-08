@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
+from datetime import datetime, timezone
 
 from app.database import get_db
 from app.models.user import User
@@ -105,31 +106,24 @@ async def get_review_queue(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Get an infinite-style queue for review.
-    Due items first, then random low-memory items.
+    Get a priority-based queue for review.
+    Uses NRS (Neural Ranking Score) to pick the most relevant fragments.
     """
-    # 1. Get due items (Only active ones)
-    due_items, _ = await reminder_service.list_reminders(
-        db, user_id=user.id, due_only=True, archived=False, limit=20
+    now = datetime.now(timezone.utc)
+    weight_case = func.case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
+    days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
+    dynamic_score = (Reminder.priority_score + (days_since * 10.0)) * weight_case
+
+    stmt = (
+        select(Reminder)
+        .where(Reminder.user_id == user.id)
+        .where(Reminder.is_archived == False)
+        .order_by(desc(dynamic_score))
+        .limit(30)
     )
-    
-    # 2. Fill to at least 20 items with random non-due ones
-    if len(due_items) < 20:
-        due_ids = [r.id for r in due_items]
-        stmt = (
-            select(Reminder)
-            .where(Reminder.user_id == user.id)
-            .where(Reminder.is_archived == False)
-            .where(Reminder.id.not_in(due_ids) if due_ids else True)
-            .order_by(func.random())
-            .limit(20 - len(due_items))
-        )
-        result = await db.execute(stmt)
-        extra_items = result.scalars().all()
-        combined = due_items + list(extra_items)
-        return [ReminderResponse.model_validate(r) for r in combined]
-        
-    return [ReminderResponse.model_validate(r) for r in due_items]
+    result = await db.execute(stmt)
+    items = result.scalars().all()
+    return [ReminderResponse.model_validate(r) for r in items]
 
 
 @router.get("/{reminder_id}", response_model=ReminderResponse)

@@ -8,6 +8,8 @@ from alembic import context
 # Import our app parts
 from app.database import Base
 from app.config import get_settings
+from app.models.user import User
+from app.models.reminder import Reminder, Attachment
 
 settings = get_settings()
 config = context.config
