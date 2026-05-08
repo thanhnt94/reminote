@@ -24,6 +24,8 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
         base_url = setting.value.strip() if setting and setting.value else "http://localhost:5070"
 
     detail_url = f"{base_url}/reminders/{reminder.id}"
+    if "localhost" in detail_url:
+        detail_url = detail_url.replace("localhost", "127.0.0.1")
     
     keyboard = [
         [
@@ -34,11 +36,12 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
-    title = reminder.title or "Knowledge Fragment"
-    content = reminder.content_text or "Reinforcement required."
+    import html
+    title = html.escape(reminder.title or "Knowledge Fragment")
+    content = html.escape(reminder.content_text or "Reinforcement required.")
     
-    header = f"🛡️ **NEURAL REINFORCEMENT**\n\n"
-    header += f"🏷️ **{title}**\n\n"
+    header = f"🛡️ <b>NEURAL REINFORCEMENT</b>\n\n"
+    header += f"🏷️ <b>{title}</b>\n\n"
     
     # Handle image if exists
     if reminder.attachments:
@@ -46,12 +49,12 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
         if abs_path.exists():
             caption = header + (content[:1000] + "..." if len(content) > 1000 else content)
             with open(abs_path, "rb") as photo:
-                await context.bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=reply_markup, parse_mode="Markdown")
+                await context.bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=reply_markup, parse_mode="HTML")
                 return
 
     # Text only
     text_msg = header + (content[:3000] + "..." if len(content) > 3000 else content)
-    await context.bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup, parse_mode="Markdown")
+    await context.bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup, parse_mode="HTML")
 
 async def get_user_by_chat_id(chat_id: str):
     async with async_session() as db:

@@ -91,6 +91,8 @@ async def send_reminder_push(chat_id: str, reminder_id: int, title: str, content
     
     base_url = await get_web_base_url()
     detail_url = f"{base_url}/reminders/{reminder_id}"
+    if "localhost" in detail_url:
+        detail_url = detail_url.replace("localhost", "127.0.0.1")
         
     bot = Bot(token=token)
     
@@ -103,37 +105,38 @@ async def send_reminder_push(chat_id: str, reminder_id: int, title: str, content
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
+    import html
+    safe_title = html.escape(title or "Knowledge Node")
+    safe_content = html.escape(content or "")
+
     try:
-        # CHARACTER LIMITS:
-        # Text-only: 4096, Photo Caption: 1024
-        
         if image_path:
             settings = get_settings()
             full_path = os.path.join(settings.STORAGE_DIR, image_path)
             if os.path.exists(full_path):
                 # Truncate for photo caption (safe limit 1000)
-                clean_content = content or "Visual asset review required."
+                clean_content = safe_content or "Visual asset review required."
                 if len(clean_content) > 1000:
                     clean_content = clean_content[:1000] + "..."
                 
-                caption = f"🛡️ **NEURAL REINFORCEMENT**\n\n"
-                caption += f"🏷️ **{title}**\n\n"
+                caption = f"🛡️ <b>NEURAL REINFORCEMENT</b>\n\n"
+                caption += f"🏷️ <b>{safe_title}</b>\n\n"
                 caption += f"{clean_content}"
                 
                 with open(full_path, "rb") as photo:
-                    await bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=reply_markup, parse_mode="Markdown")
+                    await bot.send_photo(chat_id=chat_id, photo=photo, caption=caption, reply_markup=reply_markup, parse_mode="HTML")
                     return True
 
         # Fallback to text-only message (3000 chars)
-        clean_content = content or "Knowledge fragment review required."
+        clean_content = safe_content or "Knowledge fragment review required."
         if len(clean_content) > 3000:
             clean_content = clean_content[:3000] + "..."
             
-        text_msg = f"🛡️ **NEURAL REINFORCEMENT**\n\n"
-        text_msg += f"🏷️ **{title}**\n\n"
+        text_msg = f"🛡️ <b>NEURAL REINFORCEMENT</b>\n\n"
+        text_msg += f"🏷️ <b>{safe_title}</b>\n\n"
         text_msg += f"{clean_content}"
 
-        await bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup, parse_mode="Markdown")
+        await bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup, parse_mode="HTML")
         return True
     except Exception as e:
         logger.error(f"Error sending push to {chat_id}: {e}")
