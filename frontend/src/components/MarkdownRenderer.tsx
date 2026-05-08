@@ -28,32 +28,55 @@ export default function MarkdownRenderer({ content, className = "" }: Props) {
             code: ({node, ...props}) => (
               <code className="bg-black/50 px-1.5 py-0.5 rounded text-emerald-400 font-mono text-[11px] border border-white/5" {...props} />
             ),
+            a: ({node, ...props}) => {
+              const url = props.href || '';
+              const isYouTube = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+              
+              if (isYouTube) {
+                const videoId = isYouTube[1];
+                return (
+                  <div className="my-6 aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-black">
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube.com/embed/${videoId}`}
+                      title="YouTube video player"
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="opacity-90 hover:opacity-100 transition-opacity"
+                    ></iframe>
+                  </div>
+                );
+              }
+              return <a className="text-emerald-400 hover:text-emerald-300 underline underline-offset-4 decoration-emerald-500/30 transition-colors" {...props} target="_blank" rel="noopener noreferrer" />;
+            },
             img: ({node, ...props}) => (
-              <div className="my-4 group relative inline-block">
+              <div className="my-4 group relative inline-block max-w-full">
                 <div 
                   onClick={() => setSelectedImage(props.src || null)}
-                  className="cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 hover:border-emerald-500/30 transition-all shadow-xl max-w-[200px]"
+                  className="cursor-pointer overflow-hidden rounded-2xl border border-white/10 bg-white/5 hover:border-emerald-500/30 transition-all shadow-xl max-w-fit"
                 >
                     <img 
                       {...props} 
-                      className="w-full h-auto max-h-[150px] object-cover opacity-80 group-hover:opacity-100 transition-opacity" 
+                      className="w-full h-auto max-h-[300px] object-contain opacity-90 group-hover:opacity-100 transition-opacity" 
                     />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                       <Maximize2 className="w-5 h-5 text-white" />
                     </div>
                 </div>
               </div>
             ),
             blockquote: ({node, ...props}) => (
-              <blockquote className="border-l-4 border-slate-700 pl-4 py-1 italic text-slate-500 mb-3" {...props} />
+              <blockquote className="border-l-4 border-emerald-500/30 bg-white/5 px-6 py-4 italic text-slate-400 rounded-r-2xl mb-4" {...props} />
             ),
             table: ({node, ...props}) => (
-              <div className="overflow-x-auto mb-4">
-                  <table className="w-full border-collapse border border-white/5 text-[11px]" {...props} />
+              <div className="overflow-x-auto mb-6 rounded-2xl border border-white/5">
+                  <table className="w-full border-collapse text-[11px]" {...props} />
               </div>
             ),
-            th: ({node, ...props}) => <th className="border border-white/10 bg-white/5 p-2 font-black text-white" {...props} />,
-            td: ({node, ...props}) => <td className="border border-white/5 p-2 text-slate-400" {...props} />,
+            th: ({node, ...props}) => <th className="bg-white/5 p-3 font-black text-white text-left border-b border-white/10" {...props} />,
+            td: ({node, ...props}) => <td className="p-3 text-slate-400 border-b border-white/5" {...props} />,
           }}
         >
           {content}
