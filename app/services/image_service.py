@@ -67,8 +67,17 @@ async def save_and_compress_image(file: UploadFile) -> tuple[str, str]:
 
 def get_absolute_path(relative_path: str) -> Path:
     """Convert relative DB path to absolute filesystem path."""
-    # relative_path = "RemiNoteMedia/uuid.jpg"
-    return settings.STORAGE_BASE / "uploads" / relative_path
+    # Handle cases where the prefix might be missing (common in seeded data)
+    if relative_path.startswith("RemiNoteMedia/"):
+        return settings.STORAGE_BASE / "uploads" / relative_path
+    
+    # Fallback: assume it's inside RemiNoteMedia if no prefix
+    # Check if it exists directly in uploads first, then RemiNoteMedia
+    direct_path = settings.STORAGE_BASE / "uploads" / relative_path
+    if direct_path.exists():
+        return direct_path
+        
+    return settings.UPLOAD_DIR / relative_path
 
 
 def delete_image(relative_path: str) -> None:
