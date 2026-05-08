@@ -2,7 +2,7 @@ import logging
 import re
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Any
-from sqlalchemy import select, func, desc, or_
+from sqlalchemy import select, func, desc, or_, case
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -71,7 +71,7 @@ async def list_reminders(db: AsyncSession, user_id: int, search: Optional[str] =
     now = datetime.now(timezone.utc)
     
     # Multiplier case
-    weight_case = func.case(
+    weight_case = case(
         (Reminder.manual_weight == 'high', 1.5),
         (Reminder.manual_weight == 'low', 0.5),
         else_=1.0
@@ -115,7 +115,7 @@ async def list_reminders(db: AsyncSession, user_id: int, search: Optional[str] =
 async def get_due_reminders(db: AsyncSession, limit: int = 50) -> List[Reminder]:
     # For Telegram Digest, we pick top 3 based on NRS too
     now = datetime.now(timezone.utc)
-    weight_case = func.case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
+    weight_case = case((Reminder.manual_weight == 'high', 1.5), (Reminder.manual_weight == 'low', 0.5), else_=1.0)
     days_since = (func.unixepoch(now) - func.unixepoch(Reminder.last_reviewed_at)) / 86400.0
     dynamic_score = (Reminder.priority_score + (days_since * 10.0)) * weight_case
 
