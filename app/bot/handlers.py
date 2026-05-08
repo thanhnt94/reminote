@@ -191,11 +191,19 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_interaction(db, reminder, action)
         await db.commit()
         
-    status_msg = "✅ **Mastered!** Neural level increased." if action == "understand" else "🔄 **Review Scheduled.** Node will reappear shortly."
-    await query.edit_message_text(
-        text=f"{query.message.text}\n\n---\n{status_msg}\nNext session: {reminder.next_push_at.strftime('%H:%M %d/%m')}",
-        parse_mode="Markdown"
-    )
+    status_msg = "✅ <b>Mastered!</b> Neural level increased." if action == "understand" else "🔄 <b>Review Scheduled.</b> Node will reappear shortly."
+    
+    # Get existing content (either text or caption)
+    old_content = query.message.text or query.message.caption or ""
+    new_text = f"{old_content}\n\n---\n{status_msg}\nNext session: {reminder.next_push_at.strftime('%H:%M %d/%m')}"
+    
+    try:
+        if query.message.photo:
+            await query.edit_message_caption(caption=new_text, parse_mode="HTML")
+        else:
+            await query.edit_message_text(text=new_text, parse_mode="HTML")
+    except Exception as e:
+        logger.error(f"Error editing message: {e}")
 
 async def handle_next(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Handle /next or /review command to manually fetch the top priority node."""
