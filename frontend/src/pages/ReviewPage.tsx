@@ -86,7 +86,7 @@ export default function ReviewPage() {
   const currentItem = queue[currentIndex]
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center relative p-4 overflow-hidden bg-black/20 min-h-0">
+    <div className="flex-1 flex flex-col items-center justify-center relative p-4 pb-24 md:pb-4 overflow-hidden bg-black/20 min-h-0">
       
       <div className="w-full flex-1 relative perspective-1000 min-h-0">
         <AnimatePresence mode="wait">
