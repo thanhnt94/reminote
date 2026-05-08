@@ -146,18 +146,19 @@ async def update_reminder(db: AsyncSession, reminder: Reminder, data: dict) -> R
 async def process_interaction(db: AsyncSession, reminder: Reminder, action: str):
     """
     NRS Point-based Interaction:
-    - mastered: -400 points
-    - understand: -200 points
-    - review (forgotten): +150 points
+    - mastered: -600 points (Strong mastery, push very far)
+    - got_it: -300 points (Understood, push back normally)
+    - again: -150 points (Need review, push back slightly to allow others to surface)
     """
     if action == "mastered":
-        reminder.priority_score = max(0, reminder.priority_score - 400.0)
+        reminder.priority_score = max(0, reminder.priority_score - 600.0)
         reminder.memory_level = min(5, reminder.memory_level + 2)
-    elif action == "understand":
-        reminder.priority_score = max(0, reminder.priority_score - 200.0)
+    elif action == "got_it":
+        reminder.priority_score = max(0, reminder.priority_score - 300.0)
         reminder.memory_level = min(5, reminder.memory_level + 1)
-    else: # review / forgotten
-        reminder.priority_score = reminder.priority_score + 150.0
+    elif action == "again":
+        # Subtracting instead of adding pushes it behind other ready cards
+        reminder.priority_score = max(0, reminder.priority_score - 150.0)
         reminder.memory_level = max(0, reminder.memory_level - 1)
         
     reminder.last_reviewed_at = datetime.now(timezone.utc)

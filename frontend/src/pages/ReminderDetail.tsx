@@ -189,7 +189,7 @@ export default function ReminderDetail() {
 
                 <div className="grid grid-cols-1 gap-4">
                   <button 
-                    onClick={() => interactMutation.mutate('understand')}
+                    onClick={() => interactMutation.mutate('again')}
                     className="group flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-[2rem] hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all shadow-xl"
                   >
                     <div className="flex items-center gap-5">
@@ -197,14 +197,14 @@ export default function ReminderDetail() {
                           <BookOpen className="w-7 h-7" />
                        </div>
                        <div className="text-left">
-                          <p className="text-base font-bold text-white uppercase tracking-tight">Understood</p>
-                          <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Strength +1</p>
+                          <p className="text-base font-bold text-white uppercase tracking-tight">Nhắc lại nhé</p>
+                          <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Strength -1</p>
                        </div>
                     </div>
                   </button>
 
                   <button 
-                    onClick={() => interactMutation.mutate('mastered')}
+                    onClick={() => interactMutation.mutate('got_it')}
                     className="group flex items-center justify-between p-6 bg-emerald-600 border border-emerald-500 rounded-[2rem] shadow-[0_20px_40px_rgba(16,185,129,0.2)] hover:bg-emerald-500 transition-all"
                   >
                     <div className="flex items-center gap-5">
@@ -212,8 +212,8 @@ export default function ReminderDetail() {
                           <CheckCircle2 className="w-7 h-7" />
                        </div>
                        <div className="text-left">
-                          <p className="text-base font-bold text-white uppercase tracking-tight">Mastered</p>
-                          <p className="text-[10px] text-emerald-100 font-semibold uppercase tracking-widest">Strength +2</p>
+                          <p className="text-base font-bold text-white uppercase tracking-tight">Tôi thấy ổn</p>
+                          <p className="text-[10px] text-emerald-100 font-semibold uppercase tracking-widest">Strength +1</p>
                        </div>
                     </div>
                   </button>

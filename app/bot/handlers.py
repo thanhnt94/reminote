@@ -29,10 +29,10 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     keyboard = [
         [
-            InlineKeyboardButton("🔄 Review", callback_data=f"rem:{reminder.id}:review"),
-            InlineKeyboardButton("✅ Mastered", callback_data=f"rem:{reminder.id}:understand"),
+            InlineKeyboardButton("🔄 Nhắc lại nhé", callback_data=f"rem:{reminder.id}:again"),
+            InlineKeyboardButton("✅ Tôi ổn", callback_data=f"rem:{reminder.id}:got_it"),
         ],
-        [InlineKeyboardButton("🌐 View Full Detail", url=detail_url)],
+        [InlineKeyboardButton("🌐 Xem chi tiết", url=detail_url)],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -191,7 +191,7 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_interaction(db, reminder, action)
         await db.commit()
         
-    status_msg = "✅ <b>Mastered!</b> Neural level increased." if action == "understand" else "🔄 <b>Review Scheduled.</b> Node will reappear shortly."
+    status_msg = "✅ <b>Đã ghi nhận!</b> Node đã được đẩy lùi." if action in ["mastered", "got_it"] else "🔄 <b>Sẽ sớm nhắc lại!</b> Node đã được xếp hàng lại."
     
     # Get existing content (either text or caption)
     old_content = query.message.text or query.message.caption or ""

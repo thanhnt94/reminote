@@ -58,7 +58,7 @@ export default function ReviewPage() {
   const handleSwipe = (id: number, direction: 'left' | 'right') => {
     interactMutation.mutate({ 
       id, 
-      action: direction === 'right' ? 'mastered' : 'review' 
+      action: direction === 'right' ? 'got_it' : 'again' 
     })
     setCurrentIndex(prev => prev + 1)
     setIsExpanded(false)
@@ -141,13 +141,13 @@ export default function ReviewPage() {
                     onClick={() => handleSwipe(currentItem.id, 'left')}
                     className="flex-1 py-4 bg-white/5 border border-white/10 rounded-[1.2rem] text-red-400 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all"
                   >
-                    Review
+                    Nhắc lại nhé
                   </button>
                   <button 
                     onClick={() => handleSwipe(currentItem.id, 'right')}
                     className="flex-1 py-4 bg-emerald-600 text-[#020617] rounded-[1.2rem] font-bold text-[10px] uppercase tracking-widest shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 transition-all"
                   >
-                    Mastered
+                    Tôi ổn
                   </button>
                 </div>
              </motion.div>
@@ -243,13 +243,13 @@ function SwipeCard({ item, onSwipe, onTap }: { item: Reminder, onSwipe: (dir: 'l
         style={{ opacity: likeOpacity }}
         className="absolute top-10 left-6 border border-emerald-500/50 rounded-lg px-3 py-1 -rotate-12 z-20 pointer-events-none shadow-[0_0_15px_rgba(16,185,129,0.3)] bg-emerald-500/10 backdrop-blur-sm"
       >
-        <span className="text-xl font-extrabold text-emerald-500 uppercase tracking-tighter">MASTERED</span>
+        <span className="text-xl font-extrabold text-emerald-500 uppercase tracking-tighter">TÔI ỔN</span>
       </motion.div>
       <motion.div 
         style={{ opacity: nopeOpacity }}
         className="absolute top-10 right-6 border border-red-500/50 rounded-lg px-3 py-1 rotate-12 z-20 pointer-events-none shadow-[0_0_15px_rgba(239,68,68,0.3)] bg-red-500/10 backdrop-blur-sm"
       >
-        <span className="text-xl font-extrabold text-red-500 uppercase tracking-tighter">REVIEW</span>
+        <span className="text-xl font-extrabold text-red-500 uppercase tracking-tighter">NHẮC LẠI</span>
       </motion.div>
 
       <div className="absolute bottom-0 left-0 right-0 p-8 z-10 space-y-5">
