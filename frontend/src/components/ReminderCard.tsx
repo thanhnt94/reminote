@@ -17,13 +17,15 @@ interface Reminder {
   content_text: string | null
   tags: string[]
   memory_level: number
+  priority_score: number
+  manual_weight: string
   next_push_at: string
   is_archived: boolean
   attachments: Attachment[]
   created_at: string
 }
 
-export default function ReminderCard({ reminder }: { reminder: Reminder }) {
+export default function ReminderCard({ reminder, rank }: { reminder: Reminder, rank?: number }) {
   const qc = useQueryClient()
   const isDue = new Date(reminder.next_push_at).getTime() <= Date.now()
   const hasImage = reminder.attachments && reminder.attachments.length > 0
@@ -57,9 +59,23 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
         {reminder.is_archived ? <RefreshCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
       </button>
 
+      {rank && (
+        <div className="absolute top-4 left-4 z-20 px-2.5 py-1 bg-black/60 backdrop-blur-xl border border-white/10 rounded-lg pointer-events-none">
+           <span className="text-[10px] font-black text-emerald-500 italic">#{rank}</span>
+        </div>
+      )}
+
+      {reminder.manual_weight !== 'medium' && (
+        <div className={`absolute top-4 ${rank ? 'left-16' : 'left-4'} z-20 px-2 py-1 rounded-lg border backdrop-blur-md pointer-events-none ${
+          reminder.manual_weight === 'high' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-slate-500/10 border-slate-500/30 text-slate-500'
+        }`}>
+           <span className="text-[7px] font-black uppercase tracking-widest">{reminder.manual_weight}</span>
+        </div>
+      )}
+
       {reminder.is_archived && (
-        <div className="absolute top-4 left-16 z-20 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg backdrop-blur-md pointer-events-none">
-           <span className="text-[8px] font-bold text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
+        <div className="absolute top-4 left-4 z-20 px-3 py-1 bg-amber-500/10 border border-amber-500/30 rounded-lg backdrop-blur-md pointer-events-none">
+           <span className="text-[8px] font-black text-amber-500 uppercase tracking-widest flex items-center gap-1.5">
              <Shield className="w-3 h-3" /> Archived
            </span>
         </div>
@@ -82,9 +98,7 @@ export default function ReminderCard({ reminder }: { reminder: Reminder }) {
           
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
 
-          <div className="absolute top-4 left-4 flex items-center pointer-events-none z-10">
-            <MemoryBadge level={reminder.memory_level} size="sm" />
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
         </div>
 
         {/* Content Section */}

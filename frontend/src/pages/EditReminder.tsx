@@ -17,11 +17,7 @@ export default function EditReminder() {
   const fileRef = useRef<HTMLInputElement>(null)
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [title, setTitle] = useState('')
-  const [text, setText] = useState('')
-  const [tags, setTags] = useState('')
-  const [isPasting, setIsPasting] = useState(false)
-  const [pastedFiles, setPastedFiles] = useState<{url: string, filename: string, id?: number}[]>([])
+  const [manualWeight, setManualWeight] = useState('medium')
   
   const [similarNotes, setSimilarNotes] = useState<any[]>([])
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
@@ -41,6 +37,7 @@ export default function EditReminder() {
     if (r) {
       setTitle(r.title || '')
       setText(r.content_text || '')
+      setManualWeight(r.manual_weight || 'medium')
       setTags(r.tags?.map((t: string) => `#${t}`).join(' ') || '')
       setPastedFiles(r.attachments.map((a: any) => ({
          url: `/api/attachments/${a.id}/file`,
@@ -95,6 +92,7 @@ export default function EditReminder() {
         title: title || null,
         content_text: text || null,
         tags: tags || null,
+        manual_weight: manualWeight,
       })
       const newFiles = pastedFiles.filter(f => !f.id)
       if (newFiles.length > 0) {
@@ -136,182 +134,160 @@ export default function EditReminder() {
     }
   }
 
-  const toggleTag = (tagName: string) => {
-    const currentTags = tags.split(/[\s,#]+/).filter(Boolean)
-    if (currentTags.includes(tagName)) {
-      setTags(currentTags.filter(t => t !== tagName).map(t => `#${t}`).join(' '))
-    } else {
-      setTags([...currentTags, tagName].map(t => `#${t}`).join(' '))
-    }
-  }
-
   if (isLoading) return <div className="p-20 text-center animate-pulse text-emerald-500"><Brain className="w-12 h-12 mx-auto mb-4" /></div>
 
   return (
-    <div className="max-w-4xl mx-auto pb-32 animate-fade-in relative">
+    <div className="h-[100dvh] flex flex-col bg-[#020617] text-slate-100 overflow-hidden">
       
-      {/* FIXED ACTION HEADER */}
-      <div className="sticky top-0 z-[120] bg-[#020617]/80 backdrop-blur-md px-4 py-3 flex items-center justify-between gap-4 border-b border-white/5 mb-8">
+      {/* FIXED HEADER */}
+      <header className="flex-none bg-[#020617] px-4 h-16 flex items-center justify-between gap-4 border-b border-white/5 z-50">
           <button 
             onClick={() => navigate(-1)} 
-            className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 transition-all active:scale-90"
+            className="p-2.5 rounded-xl bg-white/5 border border-white/5 text-slate-400 active:scale-90 transition-all"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
 
-          <div className="flex items-center gap-3">
-             <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Neural Refinement</span>
-             </div>
-             
-             <button
-              onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}
-              className="flex items-center gap-2 px-6 py-2.5 bg-emerald-500 text-black rounded-xl font-bold text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-20"
-            >
-              {updateMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-3.5 h-3.5" /> Save</>}
-            </button>
+          <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-lg border border-white/5">
+             <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+             <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Neural Refinement</span>
           </div>
-      </div>
+      </header>
 
-      <div className="px-4 space-y-10">
+      {/* SCROLLABLE BODY */}
+      <main className="flex-1 overflow-y-auto no-scrollbar p-6 space-y-6">
         {/* Title Input */}
-        <div className="space-y-4 relative">
+        <div className="space-y-2">
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full bg-transparent border-none p-0 text-4xl font-extrabold text-white placeholder-white/10 focus:outline-none focus:ring-0 transition-all"
+            className="w-full bg-transparent border-none p-0 text-3xl font-black text-white placeholder-white/10 focus:outline-none focus:ring-0 transition-all italic"
             placeholder="Fragment Title..."
           />
-          <div className="h-px w-20 bg-emerald-500/50" />
+          <div className="h-0.5 w-12 bg-emerald-500/50" />
           
           <AnimatePresence>
             {similarNotes.length > 0 && (
               <motion.div 
-                initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-                className="p-6 bg-amber-500/5 border border-amber-500/20 backdrop-blur-xl rounded-3xl"
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
               >
-                  <div className="flex items-center gap-2 mb-4">
-                    <AlertCircle className="w-4 h-4 text-amber-500" />
-                    <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Conflicting Nodes Detected</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {similarNotes.slice(0, 4).map(n => (
-                        <Link key={n.id} to={`/reminders/${n.id}`} className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all group border border-white/5">
-                          <p className="text-xs font-bold text-slate-300 truncate max-w-[80%]">{n.title}</p>
-                          <ArrowRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-500 transition-all" />
-                        </Link>
-                    ))}
-                  </div>
+                <div className="mt-4 p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
+                   <div className="flex items-center gap-2 mb-3">
+                     <AlertCircle className="w-3 h-3 text-amber-500" />
+                     <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Conflict Detected</p>
+                   </div>
+                   <div className="flex gap-2 overflow-x-auto no-scrollbar">
+                     {similarNotes.slice(0, 3).map(n => (
+                         <Link key={n.id} to={`/reminders/${n.id}`} className="flex-shrink-0 px-3 py-2 bg-white/5 rounded-lg border border-white/5 text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                           {n.title}
+                         </Link>
+                     ))}
+                   </div>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
         {/* Content Area */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2">
-            <button onClick={() => insertMarkdown('**', '**')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><Bold className="w-3.5 h-3.5" /></button>
-            <button onClick={() => insertMarkdown('*', '*')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><Italic className="w-3.5 h-3.5" /></button>
-            <button onClick={() => insertMarkdown('```\n', '\n```')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><Code className="w-3.5 h-3.5" /></button>
-            <button onClick={() => insertMarkdown('# ')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><Heading className="w-3.5 h-3.5" /></button>
-            <button onClick={() => insertMarkdown('- ')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><List className="w-3.5 h-3.5" /></button>
-            <button onClick={() => insertMarkdown('[', '](url)')} className="px-3 py-2 bg-white/5 border border-white/5 rounded-lg text-slate-400 hover:text-emerald-500 transition-colors text-[10px] font-bold uppercase"><LinkIcon className="w-3.5 h-3.5" /></button>
-          </div>
-          
-          <textarea
-            ref={textAreaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={15}
-            className="w-full bg-transparent border-none p-0 text-lg font-medium text-slate-300 placeholder-white/5 focus:outline-none focus:ring-0 transition-all resize-none leading-relaxed"
-            placeholder="Refine knowledge fragment..."
-          />
-        </div>
+        <textarea
+          ref={textAreaRef}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          className="w-full bg-transparent border-none p-0 text-lg font-medium text-slate-300 placeholder-white/5 focus:outline-none focus:ring-0 transition-all resize-none leading-relaxed min-h-[300px]"
+          placeholder="Refine knowledge fragment..."
+        />
+      </main>
 
-        {/* Neural Taxonomy (Tags) */}
-        <div className="space-y-4 pt-10 border-t border-white/5">
-          <div className="flex items-center gap-3">
-             <Tag className="w-4 h-4 text-emerald-500" />
-             <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Taxonomy</label>
-          </div>
-          
-          <div className="relative group">
-            <input
-              type="text"
-              value={tags}
-              onChange={(e) => setTags(e.target.value)}
-              onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
-              className="w-full bg-white/5 border border-white/5 rounded-2xl px-6 py-4 text-sm font-bold text-emerald-500 placeholder-slate-800 focus:outline-none focus:border-emerald-500/30 transition-all"
-            />
-            
-            <AnimatePresence>
-               {showTagSuggestions && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                    className="absolute bottom-full left-0 right-0 mb-4 bg-[#1e293b]/95 border border-white/10 rounded-3xl shadow-2xl overflow-hidden z-[100] backdrop-blur-xl p-2"
-                  >
-                        {tagSuggestions.map((s) => (
-                           <button 
-                             key={s} onClick={() => selectSuggestion(s)}
-                             className="w-full text-left px-5 py-3 text-xs font-bold text-slate-400 hover:text-emerald-500 hover:bg-white/5 rounded-xl transition-all flex items-center justify-between group"
-                           >
-                              <span>#{s}</span>
-                              <Plus className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                           </button>
-                        ))}
-                  </motion.div>
-               )}
-            </AnimatePresence>
-          </div>
+      {/* FIXED FOOTER - ACTIONS & TAGS */}
+      <footer className="flex-none border-t border-white/5 bg-[#020617]/80 backdrop-blur-xl pb-safe">
+        
+        {/* Image Preview - Horizontal Scroll */}
+        <AnimatePresence>
+          {pastedFiles.length > 0 && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="flex gap-3 overflow-x-auto no-scrollbar p-4 border-b border-white/5"
+            >
+              {pastedFiles.map((file, idx) => (
+                <div key={idx} className="relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border border-white/10 group">
+                   <img src={file.url} className="w-full h-full object-cover" alt="" />
+                   <button onClick={() => setPastedFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-lg">
+                      <X className="w-3 h-3" />
+                   </button>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <div className="flex flex-wrap gap-2">
-             {allTags?.slice(0, 10).map((t: any) => {
-                const isActive = tags.toLowerCase().includes(t.name.toLowerCase())
-                return (
-                  <button
-                    key={t.name} onClick={() => toggleTag(t.name)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-bold uppercase tracking-tight border transition-all ${
-                      isActive ? 'bg-emerald-500 text-black border-emerald-400' : 'bg-white/5 text-slate-500 border-white/5'
-                    }`}
-                  >
-                    {t.name}
-                  </button>
-                )
-             })}
-          </div>
-        </div>
+        {/* Toolbar & Tags */}
+        <div className="p-4 space-y-4">
+           {/* Tag Input */}
+           <div className="relative">
+              <div className="flex items-center gap-3 bg-white/[0.03] border border-white/5 rounded-xl px-4 py-2">
+                 <Tag className="w-3.5 h-3.5 text-emerald-500" />
+                 <input
+                  type="text"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowTagSuggestions(false), 200)}
+                  className="flex-1 bg-transparent border-none p-0 text-xs font-bold text-emerald-400 placeholder-slate-700 focus:outline-none focus:ring-0"
+                  placeholder="Tags..."
+                />
+              </div>
+           </div>
 
-        {/* Media Gallery */}
-        <div className="space-y-6 pt-10 border-t border-white/5">
-          <div className="flex items-center justify-between">
-             <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-emerald-500" /> Neural Assets ({pastedFiles.length})
-             </p>
-             <button onClick={() => fileRef.current?.click()} className="p-2 bg-white/5 rounded-lg border border-white/5 text-emerald-500 active:scale-90 transition-all">
-                <Plus className="w-4 h-4" />
-                <input ref={fileRef} type="file" className="hidden" onChange={(e) => e.target.files && uploadAndAdd(e.target.files[0])} />
-             </button>
-          </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
-             <AnimatePresence>
-                {pastedFiles.map((file, idx) => (
-                   <motion.div 
-                     key={idx} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}
-                     className="relative aspect-square rounded-2xl overflow-hidden border border-white/10 group"
-                   >
-                      <img src={file.url} className="w-full h-full object-cover" alt="" />
-                      <button onClick={() => setPastedFiles(prev => prev.filter((_, i) => i !== idx))} className="absolute top-1 right-1 p-1.5 bg-red-500/80 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all">
-                        <Trash2 className="w-3 h-3" />
+           {/* Actions Row */}
+           <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                   <button onClick={() => insertMarkdown('**', '**')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Bold className="w-4 h-4" /></button>
+                   <button onClick={() => insertMarkdown('*', '*')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Italic className="w-4 h-4" /></button>
+                   <button onClick={() => insertMarkdown('```\n', '\n```')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Code className="w-4 h-4" /></button>
+                   <div className="w-px h-6 bg-white/5 mx-1" />
+                   <button onClick={() => fileRef.current?.click()} className="p-2.5 bg-white/5 rounded-lg border border-emerald-500/20 text-emerald-500">
+                      <ImageIcon className="w-4 h-4" />
+                      <input ref={fileRef} type="file" className="hidden" onChange={(e) => e.target.files && uploadAndAdd(e.target.files[0])} />
+                   </button>
+                </div>
+
+                <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/5">
+                   {['low', 'medium', 'high'].map((w) => (
+                      <button
+                        key={w}
+                        onClick={() => setManualWeight(w)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                          manualWeight === w 
+                            ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {w}
                       </button>
-                   </motion.div>
-                ))}
-             </AnimatePresence>
-          </div>
+                   ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => updateMutation.mutate()}
+                disabled={updateMutation.isPending}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-500 text-black rounded-xl font-black text-[11px] uppercase tracking-[0.2em] shadow-lg shadow-emerald-500/20 active:scale-95 transition-all disabled:opacity-20"
+              >
+                {updateMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Synchronize Refinement</span>
+                  </>
+                )}
+              </button>
+           </div>
         </div>
-      </div>
+      </footer>
     </div>
   )
 }

@@ -18,6 +18,8 @@ export default function NewReminder() {
   const [isPasting, setIsPasting] = useState(false)
   const [pastedFiles, setPastedFiles] = useState<{url: string, filename: string}[]>([])
   
+  const [manualWeight, setManualWeight] = useState('medium')
+  
   const [similarNotes, setSimilarNotes] = useState<any[]>([])
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([])
   const [showTagSuggestions, setShowTagSuggestions] = useState(false)
@@ -77,6 +79,7 @@ export default function NewReminder() {
         title: title || null,
         content_text: text || null,
         tags: tags || null,
+        manual_weight: manualWeight,
       })
       if (pastedFiles.length > 0) {
         await api.put(`/api/reminders/${reminder.id}/link-attachments`, {
@@ -260,16 +263,34 @@ export default function NewReminder() {
            </div>
 
            {/* Actions Row */}
-           <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                 <button onClick={() => insertMarkdown('**', '**')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Bold className="w-4 h-4" /></button>
-                 <button onClick={() => insertMarkdown('*', '*')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Italic className="w-4 h-4" /></button>
-                 <button onClick={() => insertMarkdown('```\n', '\n```')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Code className="w-4 h-4" /></button>
-                 <div className="w-px h-6 bg-white/5 mx-1" />
-                 <button onClick={() => fileRef.current?.click()} className="p-2.5 bg-white/5 rounded-lg border border-emerald-500/20 text-emerald-500">
-                    <ImageIcon className="w-4 h-4" />
-                    <input ref={fileRef} type="file" className="hidden" onChange={(e) => e.target.files && uploadAndAdd(e.target.files[0])} />
-                 </button>
+           <div className="flex flex-col gap-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                   <button onClick={() => insertMarkdown('**', '**')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Bold className="w-4 h-4" /></button>
+                   <button onClick={() => insertMarkdown('*', '*')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Italic className="w-4 h-4" /></button>
+                   <button onClick={() => insertMarkdown('```\n', '\n```')} className="p-2.5 bg-white/5 rounded-lg border border-white/5 text-slate-400"><Code className="w-4 h-4" /></button>
+                   <div className="w-px h-6 bg-white/5 mx-1" />
+                   <button onClick={() => fileRef.current?.click()} className="p-2.5 bg-white/5 rounded-lg border border-emerald-500/20 text-emerald-500">
+                      <ImageIcon className="w-4 h-4" />
+                      <input ref={fileRef} type="file" className="hidden" onChange={(e) => e.target.files && uploadAndAdd(e.target.files[0])} />
+                   </button>
+                </div>
+
+                <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/5">
+                   {['low', 'medium', 'high'].map((w) => (
+                      <button
+                        key={w}
+                        onClick={() => setManualWeight(w)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+                          manualWeight === w 
+                            ? 'bg-emerald-500 text-black shadow-lg shadow-emerald-500/20' 
+                            : 'text-slate-500 hover:text-slate-300'
+                        }`}
+                      >
+                        {w}
+                      </button>
+                   ))}
+                </div>
               </div>
 
               <button

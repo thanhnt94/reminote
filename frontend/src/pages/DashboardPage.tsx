@@ -85,8 +85,8 @@ export default function DashboardPage() {
              <p className="text-[10px] font-bold uppercase tracking-widest">Sector Empty</p>
           </div>
         ) : (
-          allReminders.map((r: any) => (
-            <ReminderCard key={r.id} reminder={r} />
+          allReminders.map((r: any, idx: number) => (
+            <ReminderCard key={r.id} reminder={r} rank={idx + 1} />
           ))
         )}
       </div>
