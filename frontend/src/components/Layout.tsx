@@ -25,12 +25,14 @@ export default function Layout() {
   const tagInputRef = useRef<HTMLInputElement>(null)
 
   const isReviewPage = location.pathname === '/review'
-  const isDetailPage = location.pathname.startsWith('/reminders/') && 
-                       !location.pathname.endsWith('/edit') && 
-                       location.pathname !== '/reminders/new'
   const isCreatePage = location.pathname === '/reminders/new'
   const isEditPage = location.pathname.endsWith('/edit')
-  const isImmersive = isReviewPage || isDetailPage || isCreatePage || isEditPage
+  const isDetailPage = location.pathname.startsWith('/reminders/') && !isCreatePage && !isEditPage
+
+  // Immersive content (no padding, full screen)
+  const isContentImmersive = isReviewPage || isDetailPage || isCreatePage || isEditPage
+  // Hide navigation bars (desktop sidebar & mobile bottom bar)
+  const hideNav = isCreatePage || isEditPage
 
   const { data: tagsData } = useQuery({
     queryKey: ['tags'],
@@ -140,7 +142,7 @@ export default function Layout() {
       </AnimatePresence>
 
       {/* DESKTOP SIDEBAR */}
-      {!isImmersive && (
+      {!hideNav && (
         <aside className="fixed left-0 top-0 bottom-0 w-24 hidden md:flex flex-col items-center py-8 bg-[#0f172a]/40 border-r border-white/5 backdrop-blur-3xl z-[110]">
            <div 
              onClick={() => navigate('/dashboard')}
@@ -177,10 +179,10 @@ export default function Layout() {
       )}
 
       {/* MAIN WRAPPER */}
-      <div className={`flex-1 ${!isImmersive ? 'md:ml-24' : ''} flex flex-col min-w-0`}>
+      <div className={`flex-1 ${!hideNav ? 'md:ml-24' : ''} flex flex-col min-w-0`}>
         
         {/* GLOBAL UNIFIED HEADER - Hidden on Immersive Pages */}
-        {!isImmersive && (
+        {!isContentImmersive && (
           <header className="sticky top-0 z-[100] bg-[#020617]/90 backdrop-blur-3xl border-b border-white/5">
             <div className="px-4 md:px-12 py-2 flex items-center justify-between gap-4">
                 <div 
@@ -265,13 +267,13 @@ export default function Layout() {
           </header>
         )}
 
-        <main className={`${isImmersive ? 'flex-1 flex flex-col px-0 py-0 overflow-hidden' : 'px-3 md:px-12 py-3 md:py-8 pb-32 md:pb-12'} max-w-[1920px] mx-auto w-full`}>
+        <main className={`${isContentImmersive ? 'flex-1 flex flex-col px-0 py-0 overflow-hidden' : 'px-3 md:px-12 py-3 md:py-8 pb-32 md:pb-12'} max-w-[1920px] mx-auto w-full`}>
           <Outlet context={{ search, setSearch, selectedTag, setSelectedTag, showArchived, setShowArchived }} />
         </main>
       </div>
 
       {/* MOBILE BOTTOM NAV */}
-      {!isImmersive && (
+      {!hideNav && (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 h-20 bg-[#0f172a]/95 backdrop-blur-2xl border-t border-white/5 flex items-center justify-around px-6 z-50">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
