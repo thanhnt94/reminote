@@ -59,14 +59,9 @@ export default function ReminderCard({ reminder, rank }: { reminder: Reminder, r
         {reminder.is_archived ? <RefreshCcw className="w-4 h-4" /> : <Archive className="w-4 h-4" />}
       </button>
 
-      {rank && (
-        <div className="absolute top-4 left-4 z-20 px-2.5 py-1 bg-black/60 backdrop-blur-xl border border-white/10 rounded-lg pointer-events-none">
-           <span className="text-[10px] font-black text-emerald-500 italic">#{rank}</span>
-        </div>
-      )}
 
       {reminder.manual_weight !== 'medium' && (
-        <div className={`absolute top-4 ${rank ? 'left-16' : 'left-4'} z-20 px-2 py-1 rounded-lg border backdrop-blur-md pointer-events-none ${
+        <div className={`absolute top-4 left-4 z-20 px-2 py-1 rounded-lg border backdrop-blur-md pointer-events-none ${
           reminder.manual_weight === 'high' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' : 'bg-slate-500/10 border-slate-500/30 text-slate-500'
         }`}>
            <span className="text-[7px] font-black uppercase tracking-widest">{reminder.manual_weight}</span>

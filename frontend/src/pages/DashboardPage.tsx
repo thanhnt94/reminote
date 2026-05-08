@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           allReminders.map((r: any, idx: number) => (
-            <ReminderCard key={r.id} reminder={r} rank={idx + 1} />
+            <ReminderCard key={r.id} reminder={r} />
           ))
         )}
       </div>
