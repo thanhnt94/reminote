@@ -6,7 +6,7 @@ import {
   ArrowLeft, Brain, Trash2, Archive, Clock, 
   Tag, Sparkles, BookOpen, CheckCircle2, 
   Calendar, RotateCcw, ShieldAlert, Pencil,
-  Maximize2, X, Zap, Target
+  Maximize2, X, Zap, Target, Heart
 } from 'lucide-react'
 import api from '@/api/client'
 import MarkdownRenderer from '@/components/MarkdownRenderer'
@@ -190,15 +190,14 @@ export default function ReminderDetail() {
                 <div className="grid grid-cols-1 gap-4">
                   <button 
                     onClick={() => interactMutation.mutate('again')}
-                    className="group flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-[2rem] hover:border-emerald-500/20 hover:bg-emerald-500/5 transition-all shadow-xl"
+                    className="group flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-[2rem] hover:border-red-500/20 hover:bg-red-500/5 transition-all shadow-xl"
                   >
                     <div className="flex items-center gap-5">
-                       <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 group-hover:text-emerald-500 transition-all">
-                          <BookOpen className="w-7 h-7" />
+                       <div className="w-14 h-14 bg-white/5 rounded-2xl flex items-center justify-center text-slate-500 group-hover:text-red-500 transition-all">
+                          <X className="w-7 h-7" />
                        </div>
                        <div className="text-left">
-                          <p className="text-base font-bold text-white uppercase tracking-tight">Nhắc lại nhé</p>
-                          <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Strength -1</p>
+                          <p className="text-base font-bold text-white uppercase tracking-tight">Again</p>
                        </div>
                     </div>
                   </button>
@@ -209,11 +208,10 @@ export default function ReminderDetail() {
                   >
                     <div className="flex items-center gap-5">
                        <div className="w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white">
-                          <CheckCircle2 className="w-7 h-7" />
+                          <Heart className="w-7 h-7 fill-white" />
                        </div>
                        <div className="text-left">
-                          <p className="text-base font-bold text-white uppercase tracking-tight">Tôi thấy ổn</p>
-                          <p className="text-[10px] text-emerald-100 font-semibold uppercase tracking-widest">Strength +1</p>
+                          <p className="text-base font-bold text-white uppercase tracking-tight">Got it</p>
                        </div>
                     </div>
                   </button>

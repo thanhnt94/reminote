@@ -29,10 +29,10 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
     
     keyboard = [
         [
-            InlineKeyboardButton("🔄 Nhắc lại nhé", callback_data=f"rem:{reminder.id}:again"),
-            InlineKeyboardButton("✅ Tôi ổn", callback_data=f"rem:{reminder.id}:got_it"),
+            InlineKeyboardButton("❌", callback_data=f"rem:{reminder.id}:again"),
+            InlineKeyboardButton("❤️", callback_data=f"rem:{reminder.id}:got_it"),
         ],
-        [InlineKeyboardButton("🌐 Xem chi tiết", url=detail_url)],
+        [InlineKeyboardButton("🌐 View Node", url=detail_url)],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     
@@ -191,11 +191,11 @@ async def handle_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await process_interaction(db, reminder, action)
         await db.commit()
         
-    status_msg = "✅ <b>Đã ghi nhận!</b> Node đã được đẩy lùi." if action in ["mastered", "got_it"] else "🔄 <b>Sẽ sớm nhắc lại!</b> Node đã được xếp hàng lại."
+    status_msg = "❤️ Node pushed back." if action in ["mastered", "got_it"] else "🔄 Re-queued for reinforcement."
     
     # Get existing content (either text or caption)
     old_content = query.message.text or query.message.caption or ""
-    new_text = f"{old_content}\n\n---\n{status_msg}\nNext session: {reminder.next_push_at.strftime('%H:%M %d/%m')}"
+    new_text = f"{old_content}\n\n---\n{status_msg}"
     
     try:
         if query.message.photo:

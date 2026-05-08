@@ -98,10 +98,10 @@ async def send_reminder_push(chat_id: str, reminder_id: int, title: str, content
     
     keyboard = [
         [
-            InlineKeyboardButton("🔄 Nhắc lại nhé", callback_data=f"rem:{reminder_id}:again"),
-            InlineKeyboardButton("✅ Tôi ổn", callback_data=f"rem:{reminder_id}:got_it"),
+            InlineKeyboardButton("❌", callback_data=f"rem:{reminder_id}:again"),
+            InlineKeyboardButton("❤️", callback_data=f"rem:{reminder_id}:got_it"),
         ],
-        [InlineKeyboardButton("🌐 Xem chi tiết", url=detail_url)],
+        [InlineKeyboardButton("🌐 View Node", url=detail_url)],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     

@@ -139,15 +139,15 @@ export default function ReviewPage() {
                 <div className="p-6 bg-black/40 backdrop-blur-md border-t border-white/5 flex gap-3">
                    <button 
                     onClick={() => handleSwipe(currentItem.id, 'left')}
-                    className="flex-1 py-4 bg-white/5 border border-white/10 rounded-[1.2rem] text-red-400 font-bold text-[10px] uppercase tracking-widest active:scale-95 transition-all"
+                    className="flex-1 py-4 bg-white/5 border border-white/10 rounded-[1.2rem] text-red-400 font-bold text-lg active:scale-95 transition-all flex items-center justify-center"
                   >
-                    Nhắc lại nhé
+                    <CloseIcon className="w-6 h-6" />
                   </button>
                   <button 
                     onClick={() => handleSwipe(currentItem.id, 'right')}
-                    className="flex-1 py-4 bg-emerald-600 text-[#020617] rounded-[1.2rem] font-bold text-[10px] uppercase tracking-widest shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 transition-all"
+                    className="flex-1 py-4 bg-emerald-600 text-[#020617] rounded-[1.2rem] font-bold text-lg shadow-[0_0_25px_rgba(16,185,129,0.3)] active:scale-95 transition-all flex items-center justify-center"
                   >
-                    Tôi ổn
+                    <Heart className="w-6 h-6 fill-current" />
                   </button>
                 </div>
              </motion.div>
