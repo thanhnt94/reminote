@@ -21,7 +21,7 @@ async def send_reminder_to_tg(update: Update, context: ContextTypes.DEFAULT_TYPE
     async with async_session() as db:
         res = await db.execute(select(SystemSetting).where(SystemSetting.key == "TELEGRAM_WEB_BASE_URL"))
         setting = res.scalar_one_or_none()
-        base_url = setting.value if setting else "http://localhost:5070"
+        base_url = setting.value.strip() if setting and setting.value else "http://localhost:5070"
 
     detail_url = f"{base_url}/reminders/{reminder.id}"
     

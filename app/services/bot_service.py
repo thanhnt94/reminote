@@ -24,7 +24,7 @@ async def get_web_base_url():
         from sqlalchemy import select
         result = await db.execute(select(SystemSetting).where(SystemSetting.key == "TELEGRAM_WEB_BASE_URL"))
         setting = result.scalar_one_or_none()
-        return setting.value if setting else "http://localhost:5070"
+        return setting.value.strip() if setting and setting.value else "http://localhost:5070"
 
 async def stop_bot_app():
     global _bot_app, bot
@@ -65,12 +65,20 @@ async def init_bot_app():
         app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
         app.add_handler(CallbackQueryHandler(handle_callback))
         
+        from telegram import BotCommand
+        await app.bot.set_my_commands([
+            BotCommand("start", "Initialize Neural Link"),
+            BotCommand("next", "Push highest priority knowledge node"),
+            BotCommand("review", "Enter reinforcement mode"),
+            BotCommand("link", "Sync identity patterns")
+        ])
+        
         await app.initialize()
         await app.start()
         await app.updater.start_polling() # IMPORTANT: Actually listen for messages!
         
         _bot_app = app
-        logger.info("Telegram Bot Application initialized and POLLING started.")
+        logger.info("Telegram Bot Application initialized with commands and POLLING started.")
         print("DEBUG: Telegram Bot is now ONLINE and listening for messages.")
         return app
     except Exception as e:
