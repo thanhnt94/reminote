@@ -94,7 +94,7 @@ export default function TagsPage() {
           ) : (
             <div className="divide-y divide-white/5">
               {tags?.map((t: any) => (
-                <div key={t.name} className="py-4 flex items-center justify-between group">
+                <div key={t.name || 'unnamed'} className="py-4 flex items-center justify-between group">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center text-emerald-400">
                       <Tag className="w-5 h-5" />
@@ -109,7 +109,7 @@ export default function TagsPage() {
                           className="flex-1 bg-white/5 border border-emerald-500/30 rounded-xl px-4 py-2 text-white focus:outline-none"
                           autoFocus
                         />
-                        <button onClick={() => renameMutation.mutate({ oldName: t.name, newName })} className="p-2 bg-emerald-500 text-white rounded-xl">
+                        <button onClick={() => renameMutation.mutate({ oldName: t.name || '', newName })} className="p-2 bg-emerald-500 text-white rounded-xl">
                           <Check className="w-4 h-4" />
                         </button>
                         <button onClick={() => setEditingName(null)} className="p-2 bg-white/5 text-slate-500 rounded-xl">
@@ -118,7 +118,7 @@ export default function TagsPage() {
                       </div>
                     ) : (
                       <div>
-                        <h3 className="font-bold text-slate-200">#{t.name}</h3>
+                        <h3 className="font-bold text-slate-200">#{t.name || 'unnamed'}</h3>
                         <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-0.5">Used in {t.count} nodes</p>
                       </div>
                     )}
@@ -127,13 +127,13 @@ export default function TagsPage() {
                   {!editingName && (
                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
-                        onClick={() => { setEditingName(t.name); setNewName(t.name) }}
+                        onClick={() => { setEditingName(t.name); setNewName(t.name || '') }}
                         className="p-3 bg-white/5 text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-xl transition"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => { if(confirm(`Delete tag #${t.name}? This will remove the tag from all nodes.`)) deleteMutation.mutate(t.name) }}
+                        onClick={() => { if(confirm(`Delete tag #${t.name || 'unnamed'}? This will remove the tag from all nodes.`)) deleteMutation.mutate(t.name || '') }}
                         className="p-3 bg-white/5 text-slate-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition"
                       >
                         <Trash2 className="w-4 h-4" />

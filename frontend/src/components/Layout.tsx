@@ -40,7 +40,7 @@ export default function Layout() {
   })
 
   const filteredTags = tagsData?.filter((t: any) => 
-    t.name.toLowerCase().includes(tagSearch.toLowerCase())
+    t.name?.toLowerCase().includes(tagSearch.toLowerCase())
   ).slice(0, 100)
 
   useEffect(() => {
